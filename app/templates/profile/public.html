@@ -1,0 +1,79 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="profile-page">
+    <header class="profile-header">
+        <div>
+            <h1>
+                {% if profile_user.company_code %}[{{ profile_user.company_code }}]{% endif %}
+                {{ profile_user.fio_username }}
+            </h1>
+            {% if profile_user.company_name %}
+            <p class="company-name">{{ profile_user.company_name }}</p>
+            {% endif %}
+            <p class="member-since">Member since {{ profile_user.created_at.strftime('%B %Y') }}</p>
+        </div>
+        <div class="profile-actions">
+            <button class="btn btn-secondary" onclick="copyDiscordFormat()">
+                Copy for Discord
+            </button>
+            {% if current_user and current_user.id == profile_user.id %}
+            <a href="/dashboard" class="btn btn-primary">Edit Listings</a>
+            {% endif %}
+        </div>
+    </header>
+
+    <section class="profile-listings">
+        <h2>Listings ({{ listings|length }})</h2>
+
+        {% if listings %}
+        <table class="listings-table">
+            <thead>
+                <tr>
+                    <th>Material</th>
+                    <th>Quantity</th>
+                    <th>Price</th>
+                    <th>Location</th>
+                    <th>Type</th>
+                    <th>Updated</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for listing in listings %}
+                <tr>
+                    <td><strong>{{ listing.material_ticker }}</strong></td>
+                    <td>{{ '{:,}'.format(listing.quantity) if listing.quantity else '—' }}</td>
+                    <td>{{ format_price(listing) }}</td>
+                    <td>{{ listing.location or '—' }}</td>
+                    <td>
+                        <span class="badge badge-{{ listing.listing_type.value }}">
+                            {{ listing.listing_type.value }}
+                        </span>
+                    </td>
+                    <td>{{ listing.updated_at.strftime('%Y-%m-%d') }}</td>
+                </tr>
+                {% if listing.notes %}
+                <tr class="notes-row">
+                    <td colspan="6" class="notes">{{ listing.notes }}</td>
+                </tr>
+                {% endif %}
+                {% endfor %}
+            </tbody>
+        </table>
+        {% else %}
+        <div class="empty-state">
+            <p>This user hasn't created any listings yet.</p>
+        </div>
+        {% endif %}
+    </section>
+</div>
+
+<script>
+async function copyDiscordFormat() {
+    const response = await fetch('/u/{{ profile_user.fio_username }}/discord');
+    const text = await response.text();
+    await navigator.clipboard.writeText(text);
+    alert('Copied to clipboard!');
+}
+</script>
+{% endblock %}

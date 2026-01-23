@@ -1,0 +1,32 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="hero">
+    <h1>PrUnderground</h1>
+    <p class="tagline">Community trade coordination for Prosperous Universe</p>
+
+    <div class="hero-cta">
+        {% if current_user %}
+            <a href="/dashboard" class="btn btn-primary">Go to Dashboard</a>
+        {% else %}
+            <a href="/auth/login" class="btn btn-primary">Connect with FIO</a>
+        {% endif %}
+        <a href="/listings" class="btn btn-secondary">Browse Listings</a>
+    </div>
+</div>
+
+<section class="features">
+    <div class="feature">
+        <h3>List What You Sell</h3>
+        <p>Based on your FIO data, we know what you can produce. One click to list it for sale to your community.</p>
+    </div>
+    <div class="feature">
+        <h3>Find Sellers</h3>
+        <p>Search for materials and find community members who sell them. No more digging through Discord.</p>
+    </div>
+    <div class="feature">
+        <h3>Share to Discord</h3>
+        <p>Generate formatted listings ready to paste into any Discord channel. Keep your community updated.</p>
+    </div>
+</section>
+{% endblock %}

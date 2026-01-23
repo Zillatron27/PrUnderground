@@ -1,0 +1,61 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="browse-page">
+    <h1>Browse Listings</h1>
+
+    <form class="filter-form" method="get" action="/listings">
+        <div class="filter-row">
+            <input type="text" name="material" value="{{ filter_material }}"
+                   placeholder="Material (e.g., RAT, DW)">
+            <input type="text" name="location" value="{{ filter_location }}"
+                   placeholder="Location (e.g., Montem)">
+            <button type="submit" class="btn btn-primary">Search</button>
+            {% if filter_material or filter_location %}
+            <a href="/listings" class="btn btn-secondary">Clear</a>
+            {% endif %}
+        </div>
+    </form>
+
+    {% if listings %}
+    <table class="listings-table">
+        <thead>
+            <tr>
+                <th>Seller</th>
+                <th>Material</th>
+                <th>Quantity</th>
+                <th>Price</th>
+                <th>Location</th>
+                <th>Updated</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for listing in listings %}
+            <tr>
+                <td>
+                    <a href="/u/{{ listing.user.fio_username }}">
+                        {% if listing.user.company_code %}[{{ listing.user.company_code }}]{% endif %}
+                        {{ listing.user.fio_username }}
+                    </a>
+                </td>
+                <td><strong>{{ listing.material_ticker }}</strong></td>
+                <td>{{ '{:,}'.format(listing.quantity) if listing.quantity else '—' }}</td>
+                <td>{{ format_price(listing) }}</td>
+                <td>{{ listing.location or '—' }}</td>
+                <td>{{ listing.updated_at.strftime('%Y-%m-%d') }}</td>
+            </tr>
+            {% if listing.notes %}
+            <tr class="notes-row">
+                <td colspan="6" class="notes">{{ listing.notes }}</td>
+            </tr>
+            {% endif %}
+            {% endfor %}
+        </tbody>
+    </table>
+    {% else %}
+    <div class="empty-state">
+        <p>No listings found{% if filter_material or filter_location %} matching your filters{% endif %}.</p>
+    </div>
+    {% endif %}
+</div>
+{% endblock %}

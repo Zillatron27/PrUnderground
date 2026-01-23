@@ -1,0 +1,46 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="auth-page">
+    <h1>Connect with FIO</h1>
+
+    <div class="auth-instructions">
+        <h3>How to get your API key:</h3>
+        <ol>
+            <li>Go to <a href="https://fio.fnar.net/settings" target="_blank">FIO Settings</a></li>
+            <li>Under "API Keys", click "CREATE API KEY"</li>
+            <li>Enter "PrUnderground" as the application name</li>
+            <li>Enter your FIO password and click Create</li>
+            <li>Copy the generated key and paste it below</li>
+        </ol>
+    </div>
+
+    {% if error %}
+    <div class="alert alert-error">
+        {{ error }}
+    </div>
+    {% endif %}
+
+    <form action="/auth/connect" method="post" class="auth-form">
+        <div class="form-group">
+            <label for="fio_username">FIO Username</label>
+            <input type="text" id="fio_username" name="fio_username"
+                   value="{{ fio_username or '' }}" required
+                   placeholder="Your FIO username">
+        </div>
+
+        <div class="form-group">
+            <label for="fio_api_key">FIO API Key</label>
+            <input type="password" id="fio_api_key" name="fio_api_key" required
+                   placeholder="Paste your API key here">
+        </div>
+
+        <button type="submit" class="btn btn-primary">Connect</button>
+    </form>
+
+    <p class="auth-note">
+        Don't have FIO? <a href="https://fio.fnar.net" target="_blank">Register here</a> -
+        you'll need the FIO browser extension.
+    </p>
+</div>
+{% endblock %}

@@ -1,0 +1,130 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="form-page">
+    <h1>{% if listing %}Edit{% else %}Create{% endif %} Listing</h1>
+
+    <form method="post" action="{% if listing %}/listings/{{ listing.id }}/edit{% else %}/listings/new{% endif %}" class="listing-form">
+        <div class="form-group">
+            <label for="material_ticker">Material Ticker</label>
+            <input type="text" id="material_ticker" name="material_ticker"
+                   value="{{ listing.material_ticker if listing else request.query_params.get('material', '') }}"
+                   required maxlength="10" placeholder="e.g., RAT, DW, OVE"
+                   list="material-suggestions">
+            {% if suggestions %}
+            <datalist id="material-suggestions">
+                {% for mat in suggestions %}
+                <option value="{{ mat }}">
+                {% endfor %}
+            </datalist>
+            {% endif %}
+        </div>
+
+        <div class="form-row">
+            <div class="form-group">
+                <label for="quantity">Quantity (optional)</label>
+                <input type="number" id="quantity" name="quantity" min="0"
+                       value="{{ listing.quantity if listing and listing.quantity else '' }}"
+                       placeholder="Leave empty for standing offer">
+            </div>
+
+            <div class="form-group">
+                <label for="location">Location</label>
+                <input type="text" id="location" name="location" maxlength="50"
+                       value="{{ listing.location if listing else '' }}"
+                       placeholder="e.g., Montem, Benten">
+            </div>
+        </div>
+
+        <div class="form-group">
+            <label>Pricing</label>
+            <div class="price-options">
+                <label class="radio-option">
+                    <input type="radio" name="price_type" value="absolute"
+                           {% if not listing or listing.price_type.value == 'absolute' %}checked{% endif %}
+                           onchange="togglePriceFields()">
+                    <span>Fixed Price</span>
+                </label>
+                <label class="radio-option">
+                    <input type="radio" name="price_type" value="cx_relative"
+                           {% if listing and listing.price_type.value == 'cx_relative' %}checked{% endif %}
+                           onchange="togglePriceFields()">
+                    <span>CX Relative</span>
+                </label>
+                <label class="radio-option">
+                    <input type="radio" name="price_type" value="contact_me"
+                           {% if listing and listing.price_type.value == 'contact_me' %}checked{% endif %}
+                           onchange="togglePriceFields()">
+                    <span>Contact Me</span>
+                </label>
+            </div>
+        </div>
+
+        <div class="form-row price-fields" id="price-absolute-fields">
+            <div class="form-group">
+                <label for="price_value">Price per Unit</label>
+                <input type="number" id="price_value" name="price_value" step="0.01"
+                       value="{{ listing.price_value if listing and listing.price_value else '' }}"
+                       placeholder="e.g., 160">
+            </div>
+        </div>
+
+        <div class="form-row price-fields" id="price-cx-fields" style="display:none">
+            <div class="form-group">
+                <label for="price_value_cx">CX Offset (%)</label>
+                <input type="number" id="price_value_cx" name="price_value" step="1"
+                       value="{{ listing.price_value if listing and listing.price_value else '' }}"
+                       placeholder="e.g., -10 for 10% below CX">
+            </div>
+            <div class="form-group">
+                <label for="price_exchange">Exchange</label>
+                <select id="price_exchange" name="price_exchange">
+                    <option value="">Any</option>
+                    <option value="NC1" {% if listing and listing.price_exchange == 'NC1' %}selected{% endif %}>NC1 (Moria)</option>
+                    <option value="NC2" {% if listing and listing.price_exchange == 'NC2' %}selected{% endif %}>NC2 (Benten)</option>
+                    <option value="IC1" {% if listing and listing.price_exchange == 'IC1' %}selected{% endif %}>IC1 (Hortus)</option>
+                    <option value="CI1" {% if listing and listing.price_exchange == 'CI1' %}selected{% endif %}>CI1 (Arclight)</option>
+                    <option value="AI1" {% if listing and listing.price_exchange == 'AI1' %}selected{% endif %}>AI1 (Antares)</option>
+                </select>
+            </div>
+        </div>
+
+        <div class="form-group">
+            <label for="listing_type">Listing Type</label>
+            <select id="listing_type" name="listing_type">
+                <option value="standing" {% if not listing or listing.listing_type.value == 'standing' %}selected{% endif %}>
+                    Standing Offer
+                </option>
+                <option value="special" {% if listing and listing.listing_type.value == 'special' %}selected{% endif %}>
+                    Special/Deal
+                </option>
+            </select>
+        </div>
+
+        <div class="form-group">
+            <label for="notes">Notes (optional)</label>
+            <textarea id="notes" name="notes" rows="3"
+                      placeholder="Any additional info (bulk discounts, availability, etc.)">{{ listing.notes if listing else '' }}</textarea>
+        </div>
+
+        <div class="form-actions">
+            <button type="submit" class="btn btn-primary">
+                {% if listing %}Update{% else %}Create{% endif %} Listing
+            </button>
+            <a href="/dashboard" class="btn btn-secondary">Cancel</a>
+        </div>
+    </form>
+</div>
+
+<script>
+function togglePriceFields() {
+    const priceType = document.querySelector('input[name="price_type"]:checked').value;
+    document.getElementById('price-absolute-fields').style.display =
+        priceType === 'absolute' ? 'flex' : 'none';
+    document.getElementById('price-cx-fields').style.display =
+        priceType === 'cx_relative' ? 'flex' : 'none';
+}
+// Initialize on load
+document.addEventListener('DOMContentLoaded', togglePriceFields);
+</script>
+{% endblock %}

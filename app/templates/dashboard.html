@@ -1,0 +1,106 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="dashboard">
+    <header class="dashboard-header">
+        <div>
+            <h1>Welcome, {{ current_user.fio_username }}</h1>
+            <p class="company-info">
+                {% if current_user.company_code %}
+                    [{{ current_user.company_code }}] {{ current_user.company_name or '' }}
+                {% endif %}
+            </p>
+        </div>
+        <div class="dashboard-actions">
+            <a href="/listings/new" class="btn btn-primary">+ New Listing</a>
+            <a href="/u/{{ current_user.fio_username }}" class="btn btn-secondary">View Public Profile</a>
+        </div>
+    </header>
+
+    <section class="my-listings">
+        <h2>Your Listings</h2>
+
+        {% if listings %}
+        <table class="listings-table">
+            <thead>
+                <tr>
+                    <th>Material</th>
+                    <th>Quantity</th>
+                    <th>Price</th>
+                    <th>Location</th>
+                    <th>Type</th>
+                    <th>Updated</th>
+                    <th>Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for listing in listings %}
+                <tr>
+                    <td><strong>{{ listing.material_ticker }}</strong></td>
+                    <td>{{ listing.quantity if listing.quantity else '—' }}</td>
+                    <td>{{ format_price(listing) }}</td>
+                    <td>{{ listing.location or '—' }}</td>
+                    <td>
+                        <span class="badge badge-{{ listing.listing_type.value }}">
+                            {{ listing.listing_type.value }}
+                        </span>
+                    </td>
+                    <td>{{ listing.updated_at.strftime('%Y-%m-%d') }}</td>
+                    <td class="actions">
+                        <a href="/listings/{{ listing.id }}/edit" class="btn btn-sm">Edit</a>
+                        <form action="/listings/{{ listing.id }}/delete" method="post" style="display:inline">
+                            <button type="submit" class="btn btn-sm btn-danger"
+                                    onclick="return confirm('Delete this listing?')">Delete</button>
+                        </form>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+        {% else %}
+        <div class="empty-state">
+            <p>You don't have any listings yet.</p>
+            <a href="/listings/new" class="btn btn-primary">Create your first listing</a>
+        </div>
+        {% endif %}
+    </section>
+
+    {% if suggestions %}
+    <section class="suggestions">
+        <h2>Quick Add from Your Production</h2>
+        <p>Based on your FIO data, you can produce these materials:</p>
+        <div class="suggestion-chips">
+            {% for material in suggestions[:20] %}
+            <a href="/listings/new?material={{ material }}" class="chip">{{ material }}</a>
+            {% endfor %}
+            {% if suggestions|length > 20 %}
+            <span class="chip chip-more">+{{ suggestions|length - 20 }} more</span>
+            {% endif %}
+        </div>
+    </section>
+    {% endif %}
+
+    <section class="discord-export">
+        <h2>Share to Discord</h2>
+        <p>Copy your listings formatted for Discord:</p>
+        <button class="btn btn-secondary" onclick="copyDiscordFormat()">
+            Copy to Clipboard
+        </button>
+        <div id="discord-preview" class="discord-preview" style="display:none"></div>
+    </section>
+</div>
+
+<script>
+async function copyDiscordFormat() {
+    const response = await fetch('/u/{{ current_user.fio_username }}/discord');
+    const text = await response.text();
+    await navigator.clipboard.writeText(text);
+
+    const preview = document.getElementById('discord-preview');
+    preview.textContent = text;
+    preview.style.display = 'block';
+
+    alert('Copied to clipboard!');
+}
+</script>
+{% endblock %}

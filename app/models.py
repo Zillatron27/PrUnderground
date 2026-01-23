@@ -1,0 +1,91 @@
+from datetime import datetime
+from sqlalchemy import (
+    Column,
+    Integer,
+    String,
+    Float,
+    DateTime,
+    ForeignKey,
+    Enum as SQLEnum,
+    Text,
+)
+from sqlalchemy.orm import relationship
+import enum
+
+from .database import Base
+
+
+class PriceType(enum.Enum):
+    ABSOLUTE = "absolute"
+    CX_RELATIVE = "cx_relative"
+    CONTACT_ME = "contact_me"
+
+
+class ListingType(enum.Enum):
+    STANDING = "standing"
+    SPECIAL = "special"
+
+
+class User(Base):
+    __tablename__ = "users"
+
+    id = Column(Integer, primary_key=True, index=True)
+    fio_username = Column(String(50), unique=True, index=True, nullable=False)
+    company_code = Column(String(10), index=True)
+    company_name = Column(String(100))
+    discord_id = Column(String(50), unique=True, nullable=True)
+    fio_api_key = Column(String(100), nullable=True)  # Encrypted in production
+    created_at = Column(DateTime, default=datetime.utcnow)
+    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+
+    listings = relationship("Listing", back_populates="user", cascade="all, delete-orphan")
+    community_memberships = relationship(
+        "CommunityMembership", back_populates="user", cascade="all, delete-orphan"
+    )
+
+
+class Community(Base):
+    __tablename__ = "communities"
+
+    id = Column(Integer, primary_key=True, index=True)
+    name = Column(String(50), unique=True, nullable=False)
+    slug = Column(String(50), unique=True, nullable=False, index=True)
+    discord_guild_id = Column(String(50), unique=True, nullable=True)
+    discord_channel_id = Column(String(50), nullable=True)
+    created_at = Column(DateTime, default=datetime.utcnow)
+
+    memberships = relationship(
+        "CommunityMembership", back_populates="community", cascade="all, delete-orphan"
+    )
+
+
+class CommunityMembership(Base):
+    __tablename__ = "community_memberships"
+
+    id = Column(Integer, primary_key=True, index=True)
+    user_id = Column(Integer, ForeignKey("users.id"), nullable=False)
+    community_id = Column(Integer, ForeignKey("communities.id"), nullable=False)
+    joined_at = Column(DateTime, default=datetime.utcnow)
+
+    user = relationship("User", back_populates="community_memberships")
+    community = relationship("Community", back_populates="memberships")
+
+
+class Listing(Base):
+    __tablename__ = "listings"
+
+    id = Column(Integer, primary_key=True, index=True)
+    user_id = Column(Integer, ForeignKey("users.id"), nullable=False)
+    material_ticker = Column(String(10), nullable=False, index=True)
+    quantity = Column(Integer, nullable=True)  # None = standing offer, no specific qty
+    price_type = Column(SQLEnum(PriceType), nullable=False, default=PriceType.CONTACT_ME)
+    price_value = Column(Float, nullable=True)  # Absolute price or CX offset percentage
+    price_exchange = Column(String(10), nullable=True)  # e.g., "NC1" for CX-relative
+    location = Column(String(50), nullable=True)  # Planet or station
+    listing_type = Column(SQLEnum(ListingType), nullable=False, default=ListingType.STANDING)
+    notes = Column(Text, nullable=True)
+    created_at = Column(DateTime, default=datetime.utcnow)
+    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+    expires_at = Column(DateTime, nullable=True)
+
+    user = relationship("User", back_populates="listings")

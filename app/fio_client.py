@@ -54,6 +54,10 @@ class FIOClient:
         """Get all building recipes (what each building can produce)."""
         return await self._get("/rain/buildingrecipes") or []
 
+    async def get_recipe_outputs(self) -> list[dict]:
+        """Get all recipe outputs (material outputs per recipe)."""
+        return await self._get("/rain/recipeoutputs") or []
+
     async def get_exchange_all(self) -> list[dict]:
         """Get all exchange data with current prices."""
         return await self._get("/exchange/all") or []
@@ -80,9 +84,21 @@ class FIOClient:
         """Get planets owned by a user."""
         return await self._get(f"/rain/userplanets/{username}") or []
 
+    async def get_user_info(self, username: str) -> Optional[dict]:
+        """Get user info including company code/name."""
+        return await self._get(f"/user/{username}")
+
     async def get_user_production(self, username: str) -> list[dict]:
         """Get user's production lines."""
         return await self._get(f"/production/{username}") or []
+
+    async def get_user_storage(self, username: str) -> list[dict]:
+        """Get user's storage (warehouses, base stores, ship stores, etc.)."""
+        return await self._get(f"/storage/{username}") or []
+
+    async def get_user_warehouses(self, username: str) -> list[dict]:
+        """Get user's rented warehouse locations with names."""
+        return await self._get(f"/sites/warehouses/{username}") or []
 
     async def verify_api_key(self, username: str) -> dict:
         """
@@ -124,34 +140,184 @@ def extract_building_tickers_from_sites(sites: list[dict]) -> set[str]:
     tickers = set()
     for site in sites:
         for building in site.get("Buildings", []):
-            ticker = building.get("BuildingTicker")
+            # Try both possible field names
+            ticker = building.get("BuildingTicker") or building.get("Ticker")
             if ticker:
                 tickers.add(ticker)
     return tickers
 
 
-def build_production_map(sites: list[dict], recipes: list[dict]) -> dict[str, list[str]]:
+def extract_active_production(production_lines: list[dict]) -> set[str]:
     """
-    Given a user's sites and the recipe data, determine what they can produce.
+    Extract material tickers that the user is actually producing.
+
+    Production lines have Orders with Outputs containing MaterialTicker.
+    """
+    materials = set()
+    for line in production_lines:
+        for order in line.get("Orders", []):
+            for output in order.get("Outputs", []):
+                ticker = output.get("MaterialTicker")
+                if ticker:
+                    materials.add(ticker)
+    return materials
+
+
+# Known CX station names for sorting
+CX_STATIONS = {"Moria Station", "Benten Station", "Hortus Station", "Arclight Station", "Antares Station"}
+
+
+def extract_storage_locations(
+    storages: list[dict], sites: list[dict], warehouses: list[dict] = None
+) -> list[dict]:
+    """
+    Extract storage locations with human-readable names.
+
+    Args:
+        storages: Raw storage data from /storage/{username}
+        sites: Site data from /sites/{username} - maps SiteId to planet
+        warehouses: Warehouse data from /sites/warehouses/{username} - maps StoreId to location
+
+    Returns list of dicts with:
+    - addressable_id: The FIO storage identifier
+    - type: STORE, WAREHOUSE_STORE, etc.
+    - name: Human-readable name (planet name or CX/warehouse location)
+    - is_cx: True if this is a CX station warehouse
+    - items: Dict of material_ticker -> amount
+
+    Results are sorted: CX stations first (alphabetically), then planets (alphabetically)
+    """
+    warehouses = warehouses or []
+
+    # Build a map of SiteId -> PlanetName from sites (for base STORE types)
+    site_to_planet = {}
+    for site in sites:
+        site_id = site.get("SiteId")
+        planet_name = site.get("PlanetName") or site.get("PlanetIdentifier")
+        if site_id and planet_name:
+            site_to_planet[site_id] = planet_name
+
+    # Build a map of StorageId -> LocationName from warehouses (for WAREHOUSE_STORE types)
+    storage_to_location = {}
+    for wh in warehouses:
+        store_id = wh.get("StoreId")
+        location_name = wh.get("LocationName") or wh.get("LocationNaturalId")
+        if store_id and location_name:
+            storage_to_location[store_id] = location_name
+
+    result = []
+    for storage in storages:
+        addressable_id = storage.get("AddressableId", "")
+        storage_id = storage.get("StorageId", "")
+        storage_type = storage.get("Type", "")
+        storage_name = storage.get("Name")  # Some storages have explicit names
+
+        # Try to find a human-readable name
+        name = None
+
+        # 1. Check if storage has an explicit name
+        if storage_name:
+            name = storage_name
+
+        # 2. For WAREHOUSE_STORE, look up by StorageId in warehouses
+        elif storage_type == "WAREHOUSE_STORE" and storage_id in storage_to_location:
+            name = storage_to_location[storage_id]
+
+        # 3. For STORE, look up by AddressableId (which equals SiteId for base stores)
+        elif storage_type == "STORE" and addressable_id in site_to_planet:
+            name = site_to_planet[addressable_id]
+
+        # 4. Fallback to truncated ID
+        if not name:
+            name = addressable_id[:12] if addressable_id else "Unknown"
+
+        # Check if this is a CX station
+        is_cx = name in CX_STATIONS
+
+        # Extract items
+        items = {}
+        for item in storage.get("StorageItems", []):
+            ticker = item.get("MaterialTicker")
+            amount = item.get("MaterialAmount", 0)
+            if ticker:
+                items[ticker] = items.get(ticker, 0) + amount
+
+        result.append({
+            "addressable_id": addressable_id,
+            "type": storage_type,
+            "name": name,
+            "is_cx": is_cx,
+            "items": items,
+        })
+
+    # Sort: CX stations first, then by name, then base stores before warehouses
+    # Sort key: (is_cx descending, name, type where STORE comes before WAREHOUSE_STORE)
+    result.sort(key=lambda s: (
+        0 if s["is_cx"] else 1,
+        s["name"].lower(),
+        0 if s["type"] == "STORE" else 1
+    ))
+
+    return result
+
+
+def get_material_inventory(
+    storages: list[dict], material_ticker: str
+) -> list[dict]:
+    """
+    Get all storages containing a specific material.
+
+    Returns list of dicts with:
+    - addressable_id, type, name (from storage)
+    - amount: quantity of the material in that storage
+    """
+    result = []
+    for storage in storages:
+        items = storage.get("items", {})
+        if material_ticker in items:
+            result.append({
+                "addressable_id": storage["addressable_id"],
+                "type": storage["type"],
+                "name": storage["name"],
+                "amount": items[material_ticker],
+            })
+    return result
+
+
+def build_production_map(sites: list[dict], recipe_outputs: list[dict]) -> dict[str, list[str]]:
+    """
+    Given a user's sites and the recipe output data, determine what they CAN produce.
     Returns a dict mapping material tickers to list of building tickers that can make them.
+
+    Recipe outputs have format: {'Key': 'SME-AL', 'Material': 'AL', 'Amount': 3}
+    where the Key is "{BuildingTicker}-{RecipeName}"
     """
     # Get unique building tickers from all sites
     user_building_tickers = extract_building_tickers_from_sites(sites)
 
-    # Map recipes to outputs
+    # Map recipe outputs to materials
+    # Key format is "BUILDING-RECIPE", e.g., "SME-AL" means Smelter produces AL
     production_map = {}
-    for recipe in recipes:
-        building_ticker = recipe.get("BuildingTicker")
+    for output in recipe_outputs:
+        key = output.get("Key", "")
+        material = output.get("Material")
+
+        if not key or not material:
+            continue
+
+        # Extract building ticker from key (everything before first hyphen)
+        parts = key.split("-")
+        if len(parts) < 2:
+            continue
+
+        building_ticker = parts[0]
+
         if building_ticker not in user_building_tickers:
             continue
 
-        outputs = recipe.get("Outputs", [])
-        for output in outputs:
-            material = output.get("MaterialTicker") or output.get("Ticker")
-            if material:
-                if material not in production_map:
-                    production_map[material] = []
-                if building_ticker not in production_map[material]:
-                    production_map[material].append(building_ticker)
+        if material not in production_map:
+            production_map[material] = []
+        if building_ticker not in production_map[material]:
+            production_map[material].append(building_ticker)
 
     return production_map

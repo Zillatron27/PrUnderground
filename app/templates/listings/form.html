@@ -62,9 +62,9 @@
 
         <div class="form-row price-fields" id="price-absolute-fields">
             <div class="form-group">
-                <label for="price_value">Price per Unit</label>
-                <input type="number" id="price_value" name="price_value" step="0.01"
-                       value="{{ listing.price_value if listing and listing.price_value else '' }}"
+                <label for="price_value_absolute">Price per Unit</label>
+                <input type="number" id="price_value_absolute" name="price_value_absolute" step="0.01"
+                       value="{{ listing.price_value if listing and listing.price_type.value == 'absolute' and listing.price_value else '' }}"
                        placeholder="e.g., 160">
             </div>
         </div>
@@ -72,8 +72,8 @@
         <div class="form-row price-fields" id="price-cx-fields" style="display:none">
             <div class="form-group">
                 <label for="price_value_cx">CX Offset (%)</label>
-                <input type="number" id="price_value_cx" name="price_value" step="1"
-                       value="{{ listing.price_value if listing and listing.price_value else '' }}"
+                <input type="number" id="price_value_cx" name="price_value_cx" step="1"
+                       value="{{ listing.price_value if listing and listing.price_type.value == 'cx_relative' and listing.price_value else '' }}"
                        placeholder="e.g., -10 for 10% below CX">
             </div>
             <div class="form-group">
@@ -101,6 +101,53 @@
             </select>
         </div>
 
+        {% if storages %}
+        <div class="form-group">
+            <label>Live Inventory Tracking (optional)</label>
+            <p class="help-text">Link to a storage location to show live stock levels</p>
+        </div>
+        <div class="form-row">
+            <div class="form-group">
+                <label for="storage_id">Sell From</label>
+                <select id="storage_id" name="storage_id" onchange="updateStorageName()">
+                    <option value="">Manual quantity only</option>
+                    {% set cx_storages = storages | selectattr('is_cx') | list %}
+                    {% set other_storages = storages | rejectattr('is_cx') | list %}
+                    {% if cx_storages %}
+                    <optgroup label="CX Stations">
+                        {% for storage in cx_storages %}
+                        <option value="{{ storage.addressable_id }}"
+                                data-name="{{ storage.name }}"
+                                {% if listing and listing.storage_id == storage.addressable_id %}selected{% endif %}>
+                            {{ storage.name }}
+                        </option>
+                        {% endfor %}
+                    </optgroup>
+                    {% endif %}
+                    {% if other_storages %}
+                    <optgroup label="Planets">
+                        {% for storage in other_storages %}
+                        <option value="{{ storage.addressable_id }}"
+                                data-name="{{ storage.name }}"
+                                {% if listing and listing.storage_id == storage.addressable_id %}selected{% endif %}>
+                            {{ storage.name }}{% if storage.type == 'STORE' %} (Base){% else %} (Warehouse){% endif %}
+                        </option>
+                        {% endfor %}
+                    </optgroup>
+                    {% endif %}
+                </select>
+                <input type="hidden" id="storage_name" name="storage_name"
+                       value="{{ listing.storage_name if listing else '' }}">
+            </div>
+            <div class="form-group">
+                <label for="reserve_quantity">Reserve (keep in stock)</label>
+                <input type="number" id="reserve_quantity" name="reserve_quantity" min="0"
+                       value="{{ listing.reserve_quantity if listing and listing.reserve_quantity else '0' }}"
+                       placeholder="0">
+            </div>
+        </div>
+        {% endif %}
+
         <div class="form-group">
             <label for="notes">Notes (optional)</label>
             <textarea id="notes" name="notes" rows="3"
@@ -124,7 +171,20 @@ function togglePriceFields() {
     document.getElementById('price-cx-fields').style.display =
         priceType === 'cx_relative' ? 'flex' : 'none';
 }
+
+function updateStorageName() {
+    const select = document.getElementById('storage_id');
+    const hidden = document.getElementById('storage_name');
+    if (select && hidden) {
+        const option = select.options[select.selectedIndex];
+        hidden.value = option.dataset.name || '';
+    }
+}
+
 // Initialize on load
-document.addEventListener('DOMContentLoaded', togglePriceFields);
+document.addEventListener('DOMContentLoaded', function() {
+    togglePriceFields();
+    updateStorageName();
+});
 </script>
 {% endblock %}

@@ -509,6 +509,26 @@ a:hover {
     margin-top: 0.5rem;
 }
 
+/* Live inventory */
+.live-inventory {
+    font-weight: 600;
+    color: var(--color-success);
+}
+
+.inventory-detail {
+    font-weight: normal;
+    color: var(--color-text-dim);
+    margin-left: 0.25rem;
+}
+
+/* Help text */
+.help-text {
+    font-size: 0.875rem;
+    color: var(--color-text-dim);
+    margin-top: -0.5rem;
+    margin-bottom: 0.75rem;
+}
+
 /* Responsive */
 @media (max-width: 768px) {
     .navbar {

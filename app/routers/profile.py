@@ -39,6 +39,7 @@ async def public_profile(
             "profile_user": user,
             "listings": listings,
             "current_user": current_user,
+            "format_price": format_price,
         },
     )
 

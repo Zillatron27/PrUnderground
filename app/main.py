@@ -13,7 +13,7 @@ from .database import engine, Base, get_db
 from .models import User, Listing, PriceType
 from .routers import auth, listings, profile
 from .routers.auth import get_current_user, require_user
-from .fio_client import FIOClient, build_production_map
+from .fio_client import FIOClient, extract_active_production, extract_storage_locations
 
 # Create database tables
 Base.metadata.create_all(bind=engine)
@@ -85,19 +85,43 @@ async def dashboard(request: Request, db: Session = Depends(get_db)):
         .all()
     )
 
-    # Fetch production suggestions from FIO
+    # Fetch what user is actually producing from FIO
     suggestions = []
+    storage_inventory = {}  # Map storage_id -> {material_ticker -> amount}
     if user.fio_api_key:
         client = FIOClient(api_key=user.fio_api_key)
         try:
+            production_lines = await client.get_user_production(user.fio_username)
+            active_materials = extract_active_production(production_lines)
+            suggestions = sorted(active_materials)
+
+            # Fetch storage data for live inventory
+            raw_storages = await client.get_user_storage(user.fio_username)
             sites = await client.get_user_sites(user.fio_username)
-            recipes = await client.get_building_recipes()
-            production_map = build_production_map(sites, recipes)
-            suggestions = sorted(production_map.keys())
-        except Exception:
-            pass
+            warehouses = await client.get_user_warehouses(user.fio_username)
+            storages = extract_storage_locations(raw_storages, sites, warehouses)
+
+            # Build inventory map for quick lookup
+            for storage in storages:
+                storage_inventory[storage["addressable_id"]] = storage["items"]
+        except Exception as e:
+            print(f"DEBUG: FIO error: {e}")
         finally:
             await client.close()
+
+    # Compute available quantity for each listing with storage tracking
+    listing_inventory = {}
+    for listing in user_listings:
+        if listing.storage_id and listing.storage_id in storage_inventory:
+            items = storage_inventory[listing.storage_id]
+            actual = items.get(listing.material_ticker, 0)
+            reserve = listing.reserve_quantity or 0
+            available = max(0, actual - reserve)
+            listing_inventory[listing.id] = {
+                "actual": actual,
+                "reserve": reserve,
+                "available": available,
+            }
 
     return templates.TemplateResponse(
         "dashboard.html",
@@ -108,6 +132,7 @@ async def dashboard(request: Request, db: Session = Depends(get_db)):
             "listings": user_listings,
             "suggestions": suggestions,
             "format_price": format_price,
+            "listing_inventory": listing_inventory,
         },
     )
 

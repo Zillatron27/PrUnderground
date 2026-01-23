@@ -7,7 +7,7 @@ from typing import Optional
 from ..database import get_db
 from ..models import User, Listing, PriceType, ListingType
 from ..schemas import ListingCreate, ListingUpdate
-from ..fio_client import FIOClient, build_production_map
+from ..fio_client import FIOClient, extract_active_production, extract_storage_locations
 from .auth import get_current_user, require_user
 
 router = APIRouter()
@@ -53,15 +53,23 @@ async def new_listing_form(
     """Show the new listing form with production suggestions."""
     user = require_user(request, db)
 
-    # Fetch user's production capabilities from FIO
+    # Fetch what user is actually producing from FIO
     suggestions = []
+    storages = []
     if user.fio_api_key:
         client = FIOClient(api_key=user.fio_api_key)
         try:
+            production_lines = await client.get_user_production(user.fio_username)
+            active_materials = extract_active_production(production_lines)
+            suggestions = sorted(active_materials)
+
+            # Fetch storage locations
+            raw_storages = await client.get_user_storage(user.fio_username)
             sites = await client.get_user_sites(user.fio_username)
-            recipes = await client.get_building_recipes()
-            production_map = build_production_map(sites, recipes)
-            suggestions = sorted(production_map.keys())
+            warehouses = await client.get_user_warehouses(user.fio_username)
+            storages = extract_storage_locations(raw_storages, sites, warehouses)
+            # Filter to only WAREHOUSE_STORE and STORE types (skip fuel/ship stores)
+            storages = [s for s in storages if s["type"] in ("WAREHOUSE_STORE", "STORE")]
         except Exception:
             pass  # Fail silently, user can still add manually
         finally:
@@ -74,6 +82,7 @@ async def new_listing_form(
             "title": "Create Listing",
             "user": user,
             "suggestions": suggestions,
+            "storages": storages,
             "listing": None,  # New listing, not editing
         },
     )
@@ -85,15 +94,29 @@ async def create_listing(
     material_ticker: str = Form(...),
     quantity: Optional[int] = Form(None),
     price_type: str = Form(...),
-    price_value: Optional[float] = Form(None),
+    price_value_absolute: Optional[float] = Form(None),
+    price_value_cx: Optional[float] = Form(None),
     price_exchange: Optional[str] = Form(None),
     location: Optional[str] = Form(None),
     listing_type: str = Form("standing"),
     notes: Optional[str] = Form(None),
+    storage_id: Optional[str] = Form(None),
+    storage_name: Optional[str] = Form(None),
+    reserve_quantity: Optional[int] = Form(None),
     db: Session = Depends(get_db),
 ):
     """Create a new listing."""
-    user = require_user(request, db)
+    user = get_current_user(request, db)
+    if not user:
+        return RedirectResponse(url="/auth/login", status_code=303)
+
+    # Select the right price value based on price type
+    if price_type == "absolute":
+        price_value = price_value_absolute
+    elif price_type == "cx_relative":
+        price_value = price_value_cx
+    else:
+        price_value = None
 
     listing = Listing(
         user_id=user.id,
@@ -105,6 +128,9 @@ async def create_listing(
         location=location,
         listing_type=ListingType(listing_type),
         notes=notes,
+        storage_id=storage_id if storage_id else None,
+        storage_name=storage_name if storage_name else None,
+        reserve_quantity=reserve_quantity if reserve_quantity else 0,
     )
     db.add(listing)
     db.commit()
@@ -127,6 +153,21 @@ async def edit_listing_form(
     if listing.user_id != user.id:
         raise HTTPException(status_code=403, detail="Not your listing")
 
+    # Fetch storage locations for the dropdown
+    storages = []
+    if user.fio_api_key:
+        client = FIOClient(api_key=user.fio_api_key)
+        try:
+            raw_storages = await client.get_user_storage(user.fio_username)
+            sites = await client.get_user_sites(user.fio_username)
+            warehouses = await client.get_user_warehouses(user.fio_username)
+            storages = extract_storage_locations(raw_storages, sites, warehouses)
+            storages = [s for s in storages if s["type"] in ("WAREHOUSE_STORE", "STORE")]
+        except Exception:
+            pass
+        finally:
+            await client.close()
+
     return templates.TemplateResponse(
         "listings/form.html",
         {
@@ -135,6 +176,7 @@ async def edit_listing_form(
             "user": user,
             "listing": listing,
             "suggestions": [],
+            "storages": storages,
         },
     )
 
@@ -146,15 +188,29 @@ async def update_listing(
     material_ticker: str = Form(...),
     quantity: Optional[int] = Form(None),
     price_type: str = Form(...),
-    price_value: Optional[float] = Form(None),
+    price_value_absolute: Optional[float] = Form(None),
+    price_value_cx: Optional[float] = Form(None),
     price_exchange: Optional[str] = Form(None),
     location: Optional[str] = Form(None),
     listing_type: str = Form("standing"),
     notes: Optional[str] = Form(None),
+    storage_id: Optional[str] = Form(None),
+    storage_name: Optional[str] = Form(None),
+    reserve_quantity: Optional[int] = Form(None),
     db: Session = Depends(get_db),
 ):
     """Update an existing listing."""
-    user = require_user(request, db)
+    # Select the right price value based on price type
+    if price_type == "absolute":
+        price_value = price_value_absolute
+    elif price_type == "cx_relative":
+        price_value = price_value_cx
+    else:
+        price_value = None
+
+    user = get_current_user(request, db)
+    if not user:
+        return RedirectResponse(url="/auth/login", status_code=303)
     listing = db.query(Listing).filter(Listing.id == listing_id).first()
 
     if not listing:
@@ -170,6 +226,9 @@ async def update_listing(
     listing.location = location
     listing.listing_type = ListingType(listing_type)
     listing.notes = notes
+    listing.storage_id = storage_id if storage_id else None
+    listing.storage_name = storage_name if storage_name else None
+    listing.reserve_quantity = reserve_quantity if reserve_quantity else 0
 
     db.commit()
 

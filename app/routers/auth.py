@@ -37,6 +37,8 @@ async def connect_fio(
 
     try:
         user_data = await client.verify_api_key(fio_username)
+        # Fetch user info for company details
+        user_info = await client.get_user_info(fio_username)
     except FIOAuthError as e:
         return templates.TemplateResponse(
             "auth/login.html",
@@ -51,10 +53,9 @@ async def connect_fio(
     finally:
         await client.close()
 
-    # Company info isn't in these endpoints - user can set it manually later
-    # We could potentially scrape it from another source or add a form field
-    company_code = None
-    company_name = None
+    # Extract company info from user data
+    company_code = user_info.get("CompanyCode") if user_info else None
+    company_name = user_info.get("CompanyName") if user_info else None
 
     # Check if user exists
     existing_user = db.query(User).filter(User.fio_username == fio_username).first()

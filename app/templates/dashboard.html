@@ -37,9 +37,21 @@
                 {% for listing in listings %}
                 <tr>
                     <td><strong>{{ listing.material_ticker }}</strong></td>
-                    <td>{{ listing.quantity if listing.quantity else '—' }}</td>
+                    <td>
+                        {% if listing.id in listing_inventory %}
+                            {% set inv = listing_inventory[listing.id] %}
+                            <span class="live-inventory" title="{{ inv.actual }} in stock - {{ inv.reserve }} reserved">
+                                {{ inv.available }}
+                                <small class="inventory-detail">({{ inv.actual }} - {{ inv.reserve }})</small>
+                            </span>
+                        {% elif listing.quantity %}
+                            {{ listing.quantity }}
+                        {% else %}
+                            —
+                        {% endif %}
+                    </td>
                     <td>{{ format_price(listing) }}</td>
-                    <td>{{ listing.location or '—' }}</td>
+                    <td>{{ listing.storage_name or listing.location or '—' }}</td>
                     <td>
                         <span class="badge badge-{{ listing.listing_type.value }}">
                             {{ listing.listing_type.value }}
@@ -68,14 +80,11 @@
     {% if suggestions %}
     <section class="suggestions">
         <h2>Quick Add from Your Production</h2>
-        <p>Based on your FIO data, you can produce these materials:</p>
+        <p>You're currently producing these materials:</p>
         <div class="suggestion-chips">
-            {% for material in suggestions[:20] %}
+            {% for material in suggestions %}
             <a href="/listings/new?material={{ material }}" class="chip">{{ material }}</a>
             {% endfor %}
-            {% if suggestions|length > 20 %}
-            <span class="chip chip-more">+{{ suggestions|length - 20 }} more</span>
-            {% endif %}
         </div>
     </section>
     {% endif %}

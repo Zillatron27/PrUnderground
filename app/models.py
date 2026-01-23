@@ -88,4 +88,9 @@ class Listing(Base):
     updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
     expires_at = Column(DateTime, nullable=True)
 
+    # Live inventory tracking from FIO storage
+    storage_id = Column(String(100), nullable=True)  # FIO AddressableId
+    storage_name = Column(String(100), nullable=True)  # Human-readable name (cached)
+    reserve_quantity = Column(Integer, nullable=True, default=0)  # Amount to keep in stock
+
     user = relationship("User", back_populates="listings")

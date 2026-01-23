@@ -58,9 +58,9 @@ async def new_listing_form(
     if user.fio_api_key:
         client = FIOClient(api_key=user.fio_api_key)
         try:
-            buildings = await client.get_user_planet_buildings(user.fio_username)
+            sites = await client.get_user_sites(user.fio_username)
             recipes = await client.get_building_recipes()
-            production_map = build_production_map(buildings, recipes)
+            production_map = build_production_map(sites, recipes)
             suggestions = sorted(production_map.keys())
         except Exception:
             pass  # Fail silently, user can still add manually

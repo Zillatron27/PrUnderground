@@ -51,13 +51,10 @@ async def connect_fio(
     finally:
         await client.close()
 
-    # Extract company info from buildings data if available
+    # Company info isn't in these endpoints - user can set it manually later
+    # We could potentially scrape it from another source or add a form field
     company_code = None
     company_name = None
-    if user_data.get("buildings"):
-        first_building = user_data["buildings"][0]
-        company_code = first_building.get("CompanyCode")
-        company_name = first_building.get("CompanyName")
 
     # Check if user exists
     existing_user = db.query(User).filter(User.fio_username == fio_username).first()

@@ -72,6 +72,10 @@ class FIOClient:
         """Get buildings constructed by a user (requires auth or permission)."""
         return await self._get(f"/rain/userplanetbuildings/{username}") or []
 
+    async def get_user_sites(self, username: str) -> list[dict]:
+        """Get user's sites with full building details."""
+        return await self._get(f"/sites/{username}") or []
+
     async def get_user_planets(self, username: str) -> list[dict]:
         """Get planets owned by a user."""
         return await self._get(f"/rain/userplanets/{username}") or []
@@ -85,18 +89,18 @@ class FIOClient:
         Verify an API key by attempting to fetch user data.
         Returns user data if successful, raises FIOAuthError if not.
         """
-        # Try to get user's planets - this requires valid auth
-        planets = await self.get_user_planets(username)
-        if planets is None:
+        # Try to get user's sites - this requires valid auth and has the most data
+        sites = await self.get_user_sites(username)
+        if sites is None:
             raise FIOAuthError("Could not verify API key - no data returned")
 
-        # Get company info
-        buildings = await self.get_user_planet_buildings(username)
+        # Get planets for location info
+        planets = await self.get_user_planets(username)
 
         return {
             "username": username,
-            "planets": planets,
-            "buildings": buildings,
+            "sites": sites,
+            "planets": planets or [],
         }
 
 
@@ -115,16 +119,24 @@ class FIOAuthError(FIOError):
 # --- Helper functions ---
 
 
-def build_production_map(buildings: list[dict], recipes: list[dict]) -> dict[str, list[str]]:
+def extract_building_tickers_from_sites(sites: list[dict]) -> set[str]:
+    """Extract unique building tickers from sites data."""
+    tickers = set()
+    for site in sites:
+        for building in site.get("Buildings", []):
+            ticker = building.get("BuildingTicker")
+            if ticker:
+                tickers.add(ticker)
+    return tickers
+
+
+def build_production_map(sites: list[dict], recipes: list[dict]) -> dict[str, list[str]]:
     """
-    Given a user's buildings and the recipe data, determine what they can produce.
+    Given a user's sites and the recipe data, determine what they can produce.
     Returns a dict mapping material tickers to list of building tickers that can make them.
     """
-    # Get unique building tickers the user has
-    user_building_tickers = set()
-    for b in buildings:
-        if "BuildingTicker" in b:
-            user_building_tickers.add(b["BuildingTicker"])
+    # Get unique building tickers from all sites
+    user_building_tickers = extract_building_tickers_from_sites(sites)
 
     # Map recipes to outputs
     production_map = {}

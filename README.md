@@ -40,7 +40,7 @@ You *can* run it just for yourself as a personal storefront, but the real value 
 ### Prerequisites
 
 - Python 3.10+
-- A [FIO](https://fio.fnar.net/) account with API key
+- A [FIO](https://fio.fnar.net/) account with API key (users need this to log in, not required for hosting)
 
 ### Installation
 
@@ -69,11 +69,26 @@ Then open http://localhost:8000 in your browser.
 
 ### Configuration
 
-Copy `.env.example` to `.env` and adjust as needed:
+Copy `.env.example` to `.env` and generate secrets:
+
+```bash
+# Generate secrets (run each command and paste the output into .env)
+python -c "import secrets; print(secrets.token_hex(32))"
+```
+
+Required environment variables:
 
 ```
+# Security secrets (generate unique values for each)
 SECRET_KEY=your-secret-key-here
+SESSION_SECRET=your-session-secret-here
+CSRF_SECRET=your-csrf-secret-here
+
+# Database (SQLite by default, or use PostgreSQL connection string)
 DATABASE_URL=sqlite:///./prununderground.db
+
+# FIO API (default is fine unless you're running a local FIO instance)
+FIO_API_BASE=https://rest.fnar.net
 ```
 
 ## Tech Stack

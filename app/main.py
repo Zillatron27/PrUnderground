@@ -23,6 +23,9 @@ from .utils import format_price
 from .audit import AuditLog, log_audit, AuditAction  # Import to register model
 from .template_utils import templates, render_template
 
+# App version - single source of truth
+__version__ = "1.0.0"
+
 # Configure logging
 logging.basicConfig(
     level=logging.INFO,
@@ -47,9 +50,12 @@ async def lifespan(app: FastAPI):
 app = FastAPI(
     title="PrUnderground",
     description="Community trade coordination for Prosperous Universe",
-    version="0.1.0",
+    version=__version__,
     lifespan=lifespan,
 )
+
+# Make version available to all templates
+templates.env.globals["app_version"] = __version__
 
 # Attach rate limiter to app
 app.state.limiter = limiter

@@ -855,6 +855,20 @@ body.loading #global-spinner::after {
     border: 1px solid var(--border-subtle);
 }
 
+.profile-listings .listings-table {
+    width: 100%;
+    table-layout: auto;
+}
+
+.profile-listings .qty-cell {
+    min-width: 180px;
+    white-space: nowrap;
+}
+
+.profile-listings .qty-cell .badge {
+    margin-left: var(--space-sm);
+}
+
 /* ========================================
    Filter Form (Browse page)
    ======================================== */
@@ -990,6 +1004,18 @@ body.loading #global-spinner::after {
     font-family: var(--font-mono);
     font-weight: 600;
     color: var(--accent-green);
+}
+
+.live-inventory.qty-ok {
+    color: var(--accent-green);
+}
+
+.live-inventory.qty-low {
+    color: var(--accent-orange);
+}
+
+.live-inventory.qty-out {
+    color: var(--accent-red);
 }
 
 .inventory-detail {

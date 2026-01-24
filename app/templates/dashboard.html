@@ -13,7 +13,6 @@
         </div>
         <div class="dashboard-actions">
             <a href="/listings/new" class="btn btn-primary">+ New Listing</a>
-            <a href="/u/{{ current_user.fio_username }}" class="btn btn-secondary">View Public Profile</a>
         </div>
     </header>
 
@@ -29,13 +28,15 @@
                     <th>Price</th>
                     <th>Location</th>
                     <th>Type</th>
+                    <th>Notes</th>
                     <th>Updated</th>
                     <th>Actions</th>
                 </tr>
             </thead>
             <tbody>
                 {% for listing in listings %}
-                <tr>
+                {% set is_expired = listing.expires_at and listing.expires_at < now %}
+                <tr class="{% if is_expired %}listing-expired{% endif %}">
                     <td><strong>{{ listing.material_ticker }}</strong></td>
                     <td>
                         {% if listing.id in listing_inventory %}
@@ -56,6 +57,18 @@
                         <span class="badge badge-{{ listing.listing_type.value }}">
                             {{ listing.listing_type.value }}
                         </span>
+                        {% if listing.expires_at %}
+                            {% if is_expired %}
+                            <span class="badge badge-expired">Expired</span>
+                            {% else %}
+                            <span class="expiry-info" data-expires="{{ listing.expires_at.strftime('%Y-%m-%d') }}">
+                                expires <span class="locale-date">{{ listing.expires_at.strftime('%d %b') }}</span>
+                            </span>
+                            {% endif %}
+                        {% endif %}
+                    </td>
+                    <td class="notes-cell" {% if listing.notes %}title="{{ listing.notes }}"{% endif %}>
+                        {{ listing.notes or '—' }}
                     </td>
                     <td>{{ listing.updated_at.strftime('%Y-%m-%d') }}</td>
                     <td class="actions">
@@ -111,5 +124,15 @@ async function copyDiscordFormat() {
 
     alert('Copied to clipboard!');
 }
+
+// Format dates in user's locale
+document.querySelectorAll('.expiry-info').forEach(el => {
+    const dateStr = el.dataset.expires;
+    if (dateStr) {
+        const date = new Date(dateStr + 'T23:59:59');
+        const formatted = date.toLocaleDateString(undefined, { day: 'numeric', month: 'short' });
+        el.querySelector('.locale-date').textContent = formatted;
+    }
+});
 </script>
 {% endblock %}

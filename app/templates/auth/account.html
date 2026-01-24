@@ -1,0 +1,101 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="account-page">
+    <h1>Account Settings</h1>
+
+    {% if request.query_params.get('updated') %}
+    <div class="alert alert-success">
+        API key updated successfully.
+    </div>
+    {% endif %}
+
+    {% if error %}
+    <div class="alert alert-error">
+        {{ error }}
+    </div>
+    {% endif %}
+
+    <section class="account-section">
+        <h2>FIO Connection</h2>
+        <div class="info-grid">
+            <div class="info-row">
+                <span class="info-label">Username</span>
+                <span class="info-value">{{ user.fio_username }}</span>
+            </div>
+            <div class="info-row">
+                <span class="info-label">Company</span>
+                <span class="info-value">
+                    {% if user.company_code %}
+                    [{{ user.company_code }}] {{ user.company_name or '' }}
+                    {% else %}
+                    <span class="text-dim">Not set</span>
+                    {% endif %}
+                </span>
+            </div>
+            <div class="info-row">
+                <span class="info-label">API Key</span>
+                <span class="info-value">
+                    {% if masked_key %}
+                    <code>{{ masked_key }}</code>
+                    {% else %}
+                    <span class="text-dim">Not set</span>
+                    {% endif %}
+                </span>
+            </div>
+            <div class="info-row">
+                <span class="info-label">Member Since</span>
+                <span class="info-value">{{ user.created_at.strftime('%d %B %Y') }}</span>
+            </div>
+            <div class="info-row">
+                <span class="info-label">Last Updated</span>
+                <span class="info-value">{{ user.updated_at.strftime('%d %B %Y at %H:%M') }}</span>
+            </div>
+        </div>
+    </section>
+
+    <section class="account-section">
+        <h2>Update API Key</h2>
+        <p class="section-description">
+            If your API key has expired or you need to use a new one, enter it below.
+            FIO API keys don't expire automatically, but you may need to regenerate one
+            if you've revoked it or changed your FIO password.
+        </p>
+
+        <form action="/auth/refresh-key" method="post" class="account-form">
+            <div class="form-group">
+                <label for="fio_api_key">New API Key</label>
+                <input type="password" id="fio_api_key" name="fio_api_key" required
+                       placeholder="Paste your new API key">
+            </div>
+            <button type="submit" class="btn btn-primary">Update Key</button>
+        </form>
+
+        <p class="help-text">
+            Need a new key? Go to <a href="https://fio.fnar.net/settings" target="_blank">FIO Settings</a>
+            and create one under "API Keys".
+        </p>
+    </section>
+
+    <section class="account-section">
+        <h2>Data Storage</h2>
+        <p class="section-description">
+            PrUnderground stores the following information:
+        </p>
+        <ul class="data-list">
+            <li><strong>FIO Username</strong> - To identify your account</li>
+            <li><strong>FIO API Key</strong> - To fetch your production and inventory data</li>
+            <li><strong>Company Info</strong> - Your company code and name from FIO</li>
+            <li><strong>Listings</strong> - The listings you create on PrUnderground</li>
+        </ul>
+        <p class="section-description">
+            We only fetch data from FIO when you use features that need it (dashboard, creating listings).
+            Your API key is stored securely and never shared.
+        </p>
+    </section>
+
+    <div class="account-actions">
+        <a href="/auth/logout" class="btn btn-danger">Log Out</a>
+    </div>
+</div>
+{% endblock %}

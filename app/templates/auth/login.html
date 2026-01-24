@@ -2,7 +2,41 @@
 
 {% block content %}
 <div class="auth-page">
-    <h1>Connect with FIO</h1>
+    {% if step == 'username' %}
+    {# Step 1: Just ask for username #}
+    <h1>Login</h1>
+
+    {% if error %}
+    <div class="alert alert-error">
+        {{ error }}
+    </div>
+    {% endif %}
+
+    <form action="/auth/check-user" method="post" class="auth-form">
+        <div class="form-group">
+            <label for="fio_username">FIO Username</label>
+            <input type="text" id="fio_username" name="fio_username"
+                   value="{{ fio_username or '' }}" required autofocus
+                   placeholder="Your FIO username">
+        </div>
+
+        <button type="submit" class="btn btn-primary">Continue</button>
+    </form>
+
+    <p class="auth-note">
+        Don't have FIO? <a href="https://fio.fnar.net" target="_blank">Register here</a> -
+        you'll need the FIO browser extension.
+    </p>
+
+    {% else %}
+    {# Step 2: Ask for API key (new user or expired key) #}
+    <h1>{% if is_new_user %}Welcome, {{ fio_username }}!{% else %}Reconnect API Key{% endif %}</h1>
+
+    {% if is_new_user %}
+    <p class="auth-subtitle">Let's get you set up with PrUnderground.</p>
+    {% else %}
+    <p class="auth-subtitle">Your stored API key is no longer valid. Please enter a new one.</p>
+    {% endif %}
 
     <div class="auth-instructions">
         <h3>How to get your API key:</h3>
@@ -22,25 +56,19 @@
     {% endif %}
 
     <form action="/auth/connect" method="post" class="auth-form">
-        <div class="form-group">
-            <label for="fio_username">FIO Username</label>
-            <input type="text" id="fio_username" name="fio_username"
-                   value="{{ fio_username or '' }}" required
-                   placeholder="Your FIO username">
-        </div>
+        <input type="hidden" name="fio_username" value="{{ fio_username }}">
 
         <div class="form-group">
             <label for="fio_api_key">FIO API Key</label>
-            <input type="password" id="fio_api_key" name="fio_api_key" required
+            <input type="password" id="fio_api_key" name="fio_api_key" required autofocus
                    placeholder="Paste your API key here">
         </div>
 
-        <button type="submit" class="btn btn-primary">Connect</button>
+        <div class="form-actions">
+            <button type="submit" class="btn btn-primary">Connect</button>
+            <a href="/auth/login" class="btn btn-secondary">Back</a>
+        </div>
     </form>
-
-    <p class="auth-note">
-        Don't have FIO? <a href="https://fio.fnar.net" target="_blank">Register here</a> -
-        you'll need the FIO browser extension.
-    </p>
+    {% endif %}
 </div>
 {% endblock %}

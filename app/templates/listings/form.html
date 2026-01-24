@@ -20,20 +20,11 @@
             {% endif %}
         </div>
 
-        <div class="form-row">
-            <div class="form-group">
-                <label for="quantity">Quantity (optional)</label>
-                <input type="number" id="quantity" name="quantity" min="0"
-                       value="{{ listing.quantity if listing and listing.quantity else '' }}"
-                       placeholder="Leave empty for standing offer">
-            </div>
-
-            <div class="form-group">
-                <label for="location">Location</label>
-                <input type="text" id="location" name="location" maxlength="50"
-                       value="{{ listing.location if listing else '' }}"
-                       placeholder="e.g., Montem, Benten">
-            </div>
+        <div class="form-group">
+            <label for="quantity">Quantity (optional)</label>
+            <input type="number" id="quantity" name="quantity" min="0"
+                   value="{{ listing.quantity if listing and listing.quantity else '' }}"
+                   placeholder="Leave empty for standing offer">
         </div>
 
         <div class="form-group">
@@ -89,28 +80,38 @@
             </div>
         </div>
 
-        <div class="form-group">
-            <label for="listing_type">Listing Type</label>
-            <select id="listing_type" name="listing_type">
-                <option value="standing" {% if not listing or listing.listing_type.value == 'standing' %}selected{% endif %}>
-                    Standing Offer
-                </option>
-                <option value="special" {% if listing and listing.listing_type.value == 'special' %}selected{% endif %}>
-                    Special/Deal
-                </option>
-            </select>
+        <div class="form-row">
+            <div class="form-group">
+                <label for="listing_type">Listing Type</label>
+                <select id="listing_type" name="listing_type" onchange="toggleExpiryField()">
+                    <option value="standing" {% if not listing or listing.listing_type.value == 'standing' %}selected{% endif %}>
+                        Standing Offer
+                    </option>
+                    <option value="special" {% if listing and listing.listing_type.value == 'special' %}selected{% endif %}>
+                        Special/Deal
+                    </option>
+                </select>
+            </div>
+            <div class="form-group" id="expiry-field" style="display:none">
+                <label for="expires_at">Expires (optional)</label>
+                <input type="date" id="expires_at" name="expires_at"
+                       value="{{ listing.expires_at.strftime('%Y-%m-%d') if listing and listing.expires_at else '' }}">
+                <p class="help-text">Leave empty for no expiry</p>
+            </div>
         </div>
 
-        {% if storages %}
         <div class="form-group">
-            <label>Live Inventory Tracking (optional)</label>
-            <p class="help-text">Link to a storage location to show live stock levels</p>
+            <label>Location & Inventory</label>
+            {% if storages %}
+            <p class="help-text">Select a storage for live inventory tracking, or type a custom location</p>
+            {% endif %}
         </div>
         <div class="form-row">
             <div class="form-group">
                 <label for="storage_id">Sell From</label>
-                <select id="storage_id" name="storage_id" onchange="updateStorageName()">
-                    <option value="">Manual quantity only</option>
+                {% if storages %}
+                <select id="storage_id" name="storage_id" onchange="updateLocationFromStorage()">
+                    <option value="">Custom location...</option>
                     {% set cx_storages = storages | selectattr('is_cx') | list %}
                     {% set other_storages = storages | rejectattr('is_cx') | list %}
                     {% if cx_storages %}
@@ -136,17 +137,32 @@
                     </optgroup>
                     {% endif %}
                 </select>
-                <input type="hidden" id="storage_name" name="storage_name"
-                       value="{{ listing.storage_name if listing else '' }}">
+                {% else %}
+                <select id="storage_id" name="storage_id" disabled>
+                    <option value="">No FIO connection</option>
+                </select>
+                {% endif %}
             </div>
+            <div class="form-group" id="custom-location-group">
+                <label for="location">Location</label>
+                <input type="text" id="location" name="location" maxlength="50"
+                       value="{{ listing.location if listing else '' }}"
+                       placeholder="e.g., Moria Station">
+            </div>
+        </div>
+        {% if storages %}
+        <div class="form-row" id="reserve-row" style="display:none">
             <div class="form-group">
                 <label for="reserve_quantity">Reserve (keep in stock)</label>
                 <input type="number" id="reserve_quantity" name="reserve_quantity" min="0"
                        value="{{ listing.reserve_quantity if listing and listing.reserve_quantity else '0' }}"
                        placeholder="0">
+                <p class="help-text">Amount to keep - won't be shown as available</p>
             </div>
         </div>
         {% endif %}
+        <input type="hidden" id="storage_name" name="storage_name"
+               value="{{ listing.storage_name if listing else '' }}">
 
         <div class="form-group">
             <label for="notes">Notes (optional)</label>
@@ -172,19 +188,50 @@ function togglePriceFields() {
         priceType === 'cx_relative' ? 'flex' : 'none';
 }
 
-function updateStorageName() {
+function toggleExpiryField() {
+    const listingType = document.getElementById('listing_type').value;
+    document.getElementById('expiry-field').style.display =
+        listingType === 'special' ? 'block' : 'none';
+}
+
+function updateLocationFromStorage() {
     const select = document.getElementById('storage_id');
     const hidden = document.getElementById('storage_name');
-    if (select && hidden) {
-        const option = select.options[select.selectedIndex];
+    const locationInput = document.getElementById('location');
+    const customLocationGroup = document.getElementById('custom-location-group');
+    const reserveRow = document.getElementById('reserve-row');
+
+    if (!select) return;
+
+    const option = select.options[select.selectedIndex];
+    const hasStorage = select.value !== '';
+
+    // Update hidden storage_name
+    if (hidden) {
         hidden.value = option.dataset.name || '';
+    }
+
+    // Show/hide custom location field
+    if (customLocationGroup) {
+        customLocationGroup.style.display = hasStorage ? 'none' : 'block';
+    }
+
+    // Auto-fill location from storage name when selecting storage
+    if (hasStorage && locationInput) {
+        locationInput.value = option.dataset.name || '';
+    }
+
+    // Show/hide reserve field
+    if (reserveRow) {
+        reserveRow.style.display = hasStorage ? 'flex' : 'none';
     }
 }
 
 // Initialize on load
 document.addEventListener('DOMContentLoaded', function() {
     togglePriceFields();
-    updateStorageName();
+    toggleExpiryField();
+    updateLocationFromStorage();
 });
 </script>
 {% endblock %}

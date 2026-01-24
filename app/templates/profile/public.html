@@ -35,6 +35,7 @@
                     <th>Price</th>
                     <th>Location</th>
                     <th>Type</th>
+                    <th>Notes</th>
                     <th>Updated</th>
                 </tr>
             </thead>
@@ -44,19 +45,15 @@
                     <td><strong>{{ listing.material_ticker }}</strong></td>
                     <td>{{ '{:,}'.format(listing.quantity) if listing.quantity else '—' }}</td>
                     <td>{{ format_price(listing) }}</td>
-                    <td>{{ listing.location or '—' }}</td>
+                    <td>{{ listing.storage_name or listing.location or '—' }}</td>
                     <td>
                         <span class="badge badge-{{ listing.listing_type.value }}">
                             {{ listing.listing_type.value }}
                         </span>
                     </td>
+                    <td class="notes-cell" {% if listing.notes %}title="{{ listing.notes }}"{% endif %}>{{ listing.notes or '—' }}</td>
                     <td>{{ listing.updated_at.strftime('%Y-%m-%d') }}</td>
                 </tr>
-                {% if listing.notes %}
-                <tr class="notes-row">
-                    <td colspan="6" class="notes">{{ listing.notes }}</td>
-                </tr>
-                {% endif %}
                 {% endfor %}
             </tbody>
         </table>

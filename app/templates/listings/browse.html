@@ -6,14 +6,37 @@
 
     <form class="filter-form" method="get" action="/listings">
         <div class="filter-row">
-            <input type="text" name="material" value="{{ filter_material }}"
-                   placeholder="Material (e.g., RAT, DW)">
-            <input type="text" name="location" value="{{ filter_location }}"
-                   placeholder="Location (e.g., Montem)">
-            <button type="submit" class="btn btn-primary">Search</button>
-            {% if filter_material or filter_location %}
-            <a href="/listings" class="btn btn-secondary">Clear</a>
-            {% endif %}
+            <div class="filter-group">
+                <label for="material">Material</label>
+                <input type="text" id="material" name="material"
+                       value="{{ filter_material }}"
+                       placeholder="e.g., RAT, DW, FE"
+                       list="material-list"
+                       autocomplete="off">
+                <datalist id="material-list">
+                    {% for mat in all_materials %}
+                    <option value="{{ mat.ticker }}">{{ mat.name }}</option>
+                    {% endfor %}
+                </datalist>
+                <span class="help-text">Comma-separated for multiple</span>
+            </div>
+            <div class="filter-group">
+                <label for="location">Location</label>
+                <select id="location" name="location">
+                    <option value="">All locations</option>
+                    {% for loc in available_locations %}
+                    <option value="{{ loc }}" {% if loc == filter_location %}selected{% endif %}>
+                        {{ loc }}
+                    </option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="filter-actions">
+                <button type="submit" class="btn btn-primary">Search</button>
+                {% if filter_material or filter_location %}
+                <a href="/listings" class="btn btn-secondary">Clear</a>
+                {% endif %}
+            </div>
         </div>
     </form>
 
@@ -26,6 +49,7 @@
                 <th>Quantity</th>
                 <th>Price</th>
                 <th>Location</th>
+                <th>Notes</th>
                 <th>Updated</th>
             </tr>
         </thead>
@@ -41,14 +65,10 @@
                 <td><strong>{{ listing.material_ticker }}</strong></td>
                 <td>{{ '{:,}'.format(listing.quantity) if listing.quantity else '—' }}</td>
                 <td>{{ format_price(listing) }}</td>
-                <td>{{ listing.location or '—' }}</td>
+                <td>{{ listing.storage_name or listing.location or '—' }}</td>
+                <td class="notes-cell" {% if listing.notes %}title="{{ listing.notes }}"{% endif %}>{{ listing.notes or '—' }}</td>
                 <td>{{ listing.updated_at.strftime('%Y-%m-%d') }}</td>
             </tr>
-            {% if listing.notes %}
-            <tr class="notes-row">
-                <td colspan="6" class="notes">{{ listing.notes }}</td>
-            </tr>
-            {% endif %}
             {% endfor %}
         </tbody>
     </table>

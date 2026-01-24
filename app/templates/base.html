@@ -13,13 +13,16 @@
             <a href="/">PrUnderground</a>
         </div>
         <div class="nav-links">
-            <a href="/listings">Browse</a>
             {% if current_user %}
                 <a href="/dashboard">Dashboard</a>
-                <a href="/u/{{ current_user.fio_username }}">My Profile</a>
+            {% endif %}
+            <a href="/listings">Browse Listings</a>
+            {% if current_user %}
+                <a href="/u/{{ current_user.fio_username }}">Public Profile</a>
+                <a href="/auth/account">Account</a>
                 <a href="/auth/logout">Logout</a>
             {% else %}
-                <a href="/auth/login">Connect with FIO</a>
+                <a href="/auth/login">Login</a>
             {% endif %}
         </div>
     </nav>

@@ -1,4 +1,5 @@
 import os
+from datetime import datetime
 from contextlib import asynccontextmanager
 from dotenv import load_dotenv
 
@@ -14,6 +15,7 @@ from .models import User, Listing, PriceType
 from .routers import auth, listings, profile
 from .routers.auth import get_current_user, require_user
 from .fio_client import FIOClient, extract_active_production, extract_storage_locations
+from .utils import format_price
 
 # Create database tables
 Base.metadata.create_all(bind=engine)
@@ -40,20 +42,6 @@ app.mount("/static", StaticFiles(directory="app/static"), name="static")
 templates = Jinja2Templates(directory="app/templates")
 
 
-def format_price(listing) -> str:
-    """Format a listing's price for display."""
-    if listing.price_type == PriceType.ABSOLUTE:
-        return f"{listing.price_value:,.0f}/u" if listing.price_value else "Contact me"
-    elif listing.price_type == PriceType.CX_RELATIVE:
-        if listing.price_value is None:
-            return "CX price"
-        sign = "+" if listing.price_value >= 0 else ""
-        exchange = f".{listing.price_exchange}" if listing.price_exchange else ""
-        return f"CX{exchange}{sign}{listing.price_value:.0f}%"
-    else:
-        return "Contact me"
-
-
 # Add helper to Jinja2 globals
 templates.env.globals["format_price"] = format_price
 
@@ -64,11 +52,12 @@ app.include_router(profile.router, prefix="/u", tags=["profile"])
 
 
 @app.get("/")
-async def home(request: Request):
+async def home(request: Request, db: Session = Depends(get_db)):
     """Home page."""
+    current_user = get_current_user(request, db)
     return templates.TemplateResponse(
         "home.html",
-        {"request": request, "title": "PrUnderground"},
+        {"request": request, "title": "PrUnderground", "current_user": current_user},
     )
 
 
@@ -133,6 +122,7 @@ async def dashboard(request: Request, db: Session = Depends(get_db)):
             "suggestions": suggestions,
             "format_price": format_price,
             "listing_inventory": listing_inventory,
+            "now": datetime.utcnow(),
         },
     )
 

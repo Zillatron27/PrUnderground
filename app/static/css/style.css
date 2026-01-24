@@ -200,11 +200,21 @@ a:hover {
     gap: 0.5rem;
 }
 
-.notes-row td {
-    padding: 0.5rem 1rem 1rem;
+.notes-cell {
     color: var(--color-text-dim);
     font-size: 0.875rem;
-    border-bottom: 2px solid var(--color-border);
+    max-width: 200px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.notes-cell[title] {
+    cursor: help;
+}
+
+.notes-cell[title]:hover {
+    color: var(--color-text);
 }
 
 /* Badges */
@@ -227,6 +237,21 @@ a:hover {
     color: black;
 }
 
+.badge-expired {
+    background: var(--color-danger);
+    color: white;
+}
+
+.listing-expired {
+    opacity: 0.6;
+}
+
+.expiry-info {
+    font-size: 0.75rem;
+    color: var(--color-text-dim);
+    margin-left: 0.5rem;
+}
+
 /* Alerts */
 .alert {
     padding: 1rem;
@@ -238,6 +263,12 @@ a:hover {
     background: rgba(244, 67, 54, 0.2);
     border: 1px solid var(--color-danger);
     color: var(--color-danger);
+}
+
+.alert-success {
+    background: rgba(76, 175, 80, 0.2);
+    border: 1px solid var(--color-success);
+    color: var(--color-success);
 }
 
 /* Hero */
@@ -404,6 +435,93 @@ a:hover {
     color: var(--color-text-dim);
 }
 
+.auth-subtitle {
+    color: var(--color-text-dim);
+    margin-bottom: 1.5rem;
+}
+
+/* Account page */
+.account-page {
+    max-width: 700px;
+    margin: 0 auto;
+}
+
+.account-section {
+    background: var(--color-surface);
+    padding: 1.5rem;
+    border-radius: var(--radius);
+    margin-bottom: 1.5rem;
+}
+
+.account-section h2 {
+    margin-bottom: 1rem;
+    font-size: 1.25rem;
+}
+
+.section-description {
+    color: var(--color-text-dim);
+    margin-bottom: 1rem;
+}
+
+.info-grid {
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+}
+
+.info-row {
+    display: flex;
+    justify-content: space-between;
+    padding: 0.5rem 0;
+    border-bottom: 1px solid var(--color-border);
+}
+
+.info-row:last-child {
+    border-bottom: none;
+}
+
+.info-label {
+    color: var(--color-text-dim);
+}
+
+.info-value {
+    font-weight: 500;
+}
+
+.info-value code {
+    background: var(--color-surface-2);
+    padding: 0.2rem 0.5rem;
+    border-radius: var(--radius);
+    font-family: monospace;
+}
+
+.text-dim {
+    color: var(--color-text-dim);
+}
+
+.account-form {
+    margin: 1rem 0;
+}
+
+.data-list {
+    margin-left: 1.5rem;
+    margin-bottom: 1rem;
+}
+
+.data-list li {
+    margin-bottom: 0.5rem;
+    color: var(--color-text-dim);
+}
+
+.data-list strong {
+    color: var(--color-text);
+}
+
+.account-actions {
+    display: flex;
+    gap: 1rem;
+}
+
 /* Profile page */
 .profile-header {
     display: flex;
@@ -442,20 +560,66 @@ a:hover {
 /* Filter form */
 .filter-form {
     margin-bottom: 1.5rem;
+    background: var(--color-surface);
+    padding: 1.5rem;
+    border-radius: var(--radius);
 }
 
 .filter-row {
     display: flex;
     gap: 1rem;
+    align-items: flex-start;
 }
 
 .filter-row input {
     flex: 1;
     padding: 0.75rem;
-    background: var(--color-surface);
+    background: var(--color-surface-2);
     border: 1px solid var(--color-border);
     border-radius: var(--radius);
     color: var(--color-text);
+}
+
+.filter-group {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+}
+
+.filter-group label {
+    font-size: 0.875rem;
+    color: var(--color-text-dim);
+    font-weight: 500;
+}
+
+.filter-group select,
+.filter-group input {
+    padding: 0.75rem;
+    background: var(--color-surface-2);
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius);
+    color: var(--color-text);
+    font-size: 1rem;
+}
+
+.filter-group select:focus,
+.filter-group input:focus {
+    outline: none;
+    border-color: var(--color-primary);
+}
+
+.filter-group .help-text {
+    margin-top: 0.25rem;
+    margin-bottom: 0;
+    font-size: 0.75rem;
+}
+
+.filter-actions {
+    display: flex;
+    gap: 0.5rem;
+    /* Align with input fields: label height (~20px) + gap (8px) */
+    margin-top: 1.625rem;
 }
 
 /* Radio options */

@@ -3,13 +3,16 @@ from fastapi import APIRouter, Depends, HTTPException, Request
 from fastapi.responses import HTMLResponse, PlainTextResponse
 from fastapi.templating import Jinja2Templates
 from sqlalchemy.orm import Session
+from sqlalchemy import or_
 
 from ..database import get_db
 from ..models import User, Listing, PriceType
+from ..utils import format_price
 from .auth import get_current_user
 
 router = APIRouter()
 templates = Jinja2Templates(directory="app/templates")
+templates.env.globals["format_price"] = format_price
 
 
 @router.get("/{username}", response_class=HTMLResponse)
@@ -23,9 +26,11 @@ async def public_profile(
     if not user:
         raise HTTPException(status_code=404, detail="User not found")
 
+    now = datetime.utcnow()
     listings = (
         db.query(Listing)
         .filter(Listing.user_id == user.id)
+        .filter(or_(Listing.expires_at.is_(None), Listing.expires_at > now))
         .order_by(Listing.updated_at.desc())
         .all()
     )
@@ -55,9 +60,11 @@ async def discord_copy(
     if not user:
         raise HTTPException(status_code=404, detail="User not found")
 
+    now = datetime.utcnow()
     listings = (
         db.query(Listing)
         .filter(Listing.user_id == user.id)
+        .filter(or_(Listing.expires_at.is_(None), Listing.expires_at > now))
         .order_by(Listing.material_ticker)
         .all()
     )
@@ -85,17 +92,3 @@ async def discord_copy(
     lines.append(f"📋 Full listings: {base_url}/u/{username}")
 
     return "\n".join(lines)
-
-
-def format_price(listing: Listing) -> str:
-    """Format a listing's price for display."""
-    if listing.price_type == PriceType.ABSOLUTE:
-        return f"{listing.price_value:,.0f}/u" if listing.price_value else "Contact me"
-    elif listing.price_type == PriceType.CX_RELATIVE:
-        if listing.price_value is None:
-            return "CX price"
-        sign = "+" if listing.price_value >= 0 else ""
-        exchange = f".{listing.price_exchange}" if listing.price_exchange else ""
-        return f"CX{exchange}{sign}{listing.price_value:.0f}%"
-    else:
-        return "Contact me"

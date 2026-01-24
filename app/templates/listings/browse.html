@@ -27,12 +27,17 @@
                     </option>
                     {% endfor %}
                 </select>
+                <span class="help-text">&nbsp;</span>
             </div>
-            <div class="filter-actions">
-                <button type="submit" class="btn btn-primary">Search</button>
-                {% if filter_material or filter_location %}
-                <a href="/listings" class="btn btn-secondary">Clear</a>
-                {% endif %}
+            <div class="filter-group filter-actions-group">
+                <label>&nbsp;</label>
+                <div class="filter-actions">
+                    <button type="submit" class="btn btn-primary">Search</button>
+                    {% if filter_material or filter_location %}
+                    <a href="/listings" class="btn btn-secondary">Clear</a>
+                    {% endif %}
+                </div>
+                <span class="help-text">&nbsp;</span>
             </div>
         </div>
     </form>

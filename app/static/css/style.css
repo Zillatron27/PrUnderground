@@ -935,6 +935,10 @@ body.loading #global-spinner::after {
     gap: var(--space-xs);
 }
 
+.filter-actions-group {
+    flex: 0 0 auto;
+}
+
 /* ========================================
    Radio Options (Price type)
    ======================================== */

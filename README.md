@@ -80,8 +80,9 @@ DATABASE_URL=sqlite:///./prununderground.db
 
 - [x] UI polish and mobile responsiveness
 - [ ] Mobile UI improvements
-- [ ] Bulk listing creation from production buildings
-- [ ] Discord bot for search commands (maybe)
+- [ ] Multi-part listings
+- [ ] Discord integration
+- [ ] Custom copy templates
 - [ ] Multi-community support
 
 ## Contributing

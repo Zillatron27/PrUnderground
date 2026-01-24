@@ -26,7 +26,7 @@ You *can* run it just for yourself as a personal storefront, but the real value 
 
 ## Screenshots
 
-<!-- TODO: Add screenshots -->
+Coming soon! 🙈
 
 ## Setup
 

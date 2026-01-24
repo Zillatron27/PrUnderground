@@ -1,4 +1,3 @@
-import os
 import logging
 from datetime import datetime
 from contextlib import asynccontextmanager
@@ -8,22 +7,21 @@ load_dotenv()
 
 from fastapi import FastAPI, Request, Depends
 from fastapi.staticfiles import StaticFiles
-from fastapi.templating import Jinja2Templates
 from fastapi.responses import HTMLResponse, PlainTextResponse
 from sqlalchemy.orm import Session
-from slowapi import Limiter, _rate_limit_exceeded_handler
+from slowapi import Limiter
 from slowapi.util import get_remote_address
 from slowapi.errors import RateLimitExceeded
 
 from .database import engine, Base, get_db
-from .models import User, Listing, PriceType
+from .models import User, Listing
 from .routers import auth, listings, profile
 from .routers.auth import get_current_user, require_user
 from .fio_client import FIOClient, extract_active_production, extract_storage_locations
 from .fio_cache import fio_cache
 from .utils import format_price
 from .audit import AuditLog, log_audit, AuditAction  # Import to register model
-from .csrf import get_csrf_token, set_csrf_cookie, verify_csrf, CSRF_FORM_FIELD
+from .template_utils import templates, render_template
 
 # Configure logging
 logging.basicConfig(
@@ -69,26 +67,6 @@ async def rate_limit_handler(request: Request, exc: RateLimitExceeded):
 
 # Mount static files
 app.mount("/static", StaticFiles(directory="app/static"), name="static")
-
-# Set up templates
-templates = Jinja2Templates(directory="app/templates")
-
-
-# Add helpers to Jinja2 globals
-templates.env.globals["format_price"] = format_price
-templates.env.globals["csrf_field_name"] = CSRF_FORM_FIELD
-
-
-def render_template(request: Request, template_name: str, context: dict):
-    """
-    Render a template with CSRF token automatically added.
-    Returns a TemplateResponse with CSRF cookie set.
-    """
-    csrf_token = get_csrf_token(request)
-    context["csrf_token"] = csrf_token
-    response = templates.TemplateResponse(template_name, context)
-    set_csrf_cookie(response, csrf_token)
-    return response
 
 # Include routers
 app.include_router(auth.router, prefix="/auth", tags=["auth"])

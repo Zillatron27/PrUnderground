@@ -66,7 +66,14 @@
                     </a>
                 </td>
                 <td><strong>{{ listing.material_ticker }}</strong></td>
-                <td>{{ '{:,}'.format(listing.quantity) if listing.quantity else '—' }}</td>
+                <td class="qty-cell">
+                    {{ '{:,}'.format(listing.quantity) if listing.quantity else '—' }}
+                    {% if stock_status.get(listing.id) == 'out' %}
+                        <span class="badge badge-out-of-stock">OUT OF STOCK</span>
+                    {% elif stock_status.get(listing.id) == 'low' %}
+                        <span class="badge badge-low-stock">LOW STOCK</span>
+                    {% endif %}
+                </td>
                 <td>{{ format_price(listing) }}</td>
                 <td>{{ listing.storage_name or listing.location or '—' }}</td>
                 <td class="notes-cell" {% if listing.notes %}title="{{ listing.notes }}"{% endif %}>{{ listing.notes or '—' }}</td>

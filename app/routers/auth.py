@@ -2,7 +2,6 @@ import os
 import logging
 from fastapi import APIRouter, Depends, HTTPException, Request, Form
 from fastapi.responses import HTMLResponse, RedirectResponse
-from fastapi.templating import Jinja2Templates
 from sqlalchemy.orm import Session
 from typing import Optional
 from itsdangerous import URLSafeTimedSerializer, BadSignature, SignatureExpired
@@ -11,26 +10,15 @@ from slowapi.util import get_remote_address
 
 from ..database import get_db
 from ..models import User
-from ..schemas import UserCreate
-from ..fio_client import FIOClient, FIOAuthError, build_production_map
+from ..fio_client import FIOClient, FIOAuthError
 from ..audit import log_audit, AuditAction
-from ..csrf import get_csrf_token, set_csrf_cookie, verify_csrf, CSRF_FORM_FIELD
+from ..csrf import verify_csrf
+from ..template_utils import render_template
 
 logger = logging.getLogger(__name__)
 
 router = APIRouter()
-templates = Jinja2Templates(directory="app/templates")
-templates.env.globals["csrf_field_name"] = CSRF_FORM_FIELD
 limiter = Limiter(key_func=get_remote_address)
-
-
-def render_template(request: Request, template_name: str, context: dict, status_code: int = 200):
-    """Render a template with CSRF token automatically added."""
-    csrf_token = get_csrf_token(request)
-    context["csrf_token"] = csrf_token
-    response = templates.TemplateResponse(template_name, context, status_code=status_code)
-    set_csrf_cookie(response, csrf_token)
-    return response
 
 # Session cookie configuration
 SESSION_SECRET = os.getenv("SESSION_SECRET", os.getenv("SECRET_KEY", "dev-secret-change-me"))

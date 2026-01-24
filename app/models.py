@@ -44,6 +44,9 @@ class User(Base):
     )
 
 
+# --- Future: Multi-community support (roadmap item) ---
+
+
 class Community(Base):
     __tablename__ = "communities"
 

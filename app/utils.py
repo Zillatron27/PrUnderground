@@ -1,6 +1,15 @@
 """Shared utility functions."""
 
+from typing import Optional
+
 from .models import PriceType
+
+
+def clean_str(val: Optional[str]) -> Optional[str]:
+    """Sanitize optional string fields - empty strings and 'None' become None."""
+    if not val or val.strip() == "" or val.strip().lower() == "none":
+        return None
+    return val.strip()
 
 
 def format_price(listing) -> str:

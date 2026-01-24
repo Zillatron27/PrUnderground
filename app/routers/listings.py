@@ -1,33 +1,22 @@
+import re
 from datetime import datetime
 from fastapi import APIRouter, Depends, HTTPException, Request, Form, Query
 from fastapi.responses import HTMLResponse, RedirectResponse
-from fastapi.templating import Jinja2Templates
 from sqlalchemy.orm import Session
 from typing import Optional
 
 from ..database import get_db
 from ..models import User, Listing, PriceType, ListingType
-from ..schemas import ListingCreate, ListingUpdate
 from ..fio_client import FIOClient, extract_active_production, extract_storage_locations
 from ..fio_cache import fio_cache
-from ..utils import format_price
+from ..utils import format_price, clean_str
 from ..audit import log_audit, AuditAction
-from ..csrf import get_csrf_token, set_csrf_cookie, verify_csrf, CSRF_FORM_FIELD
+from ..csrf import verify_csrf
+from ..template_utils import templates, render_template
 from .auth import get_current_user, require_user
+from .profile import get_stock_status_for_listings
 
 router = APIRouter()
-templates = Jinja2Templates(directory="app/templates")
-templates.env.globals["format_price"] = format_price
-templates.env.globals["csrf_field_name"] = CSRF_FORM_FIELD
-
-
-def render_template(request: Request, template_name: str, context: dict, status_code: int = 200):
-    """Render a template with CSRF token automatically added."""
-    csrf_token = get_csrf_token(request)
-    context["csrf_token"] = csrf_token
-    response = templates.TemplateResponse(template_name, context, status_code=status_code)
-    set_csrf_cookie(response, csrf_token)
-    return response
 
 
 @router.get("/", response_class=HTMLResponse)
@@ -75,6 +64,18 @@ async def browse_listings(
         if l.storage_name or l.location
     ))
 
+    # Get stock status for all listings (grouped by user to minimize FIO calls)
+    stock_status = {}
+    users_with_listings = {}
+    for listing in listings:
+        if listing.user_id not in users_with_listings:
+            users_with_listings[listing.user_id] = {"user": listing.user, "listings": []}
+        users_with_listings[listing.user_id]["listings"].append(listing)
+
+    for user_data in users_with_listings.values():
+        user_stock = await get_stock_status_for_listings(user_data["user"], user_data["listings"])
+        stock_status.update(user_stock)
+
     return templates.TemplateResponse(
         "listings/browse.html",
         {
@@ -85,6 +86,7 @@ async def browse_listings(
             "filter_material": material or "",
             "filter_location": location or "",
             "available_locations": available_locations,
+            "stock_status": stock_status,
         },
     )
 
@@ -92,8 +94,6 @@ async def browse_listings(
 @router.get("/api/materials", response_class=HTMLResponse)
 async def get_materials_datalist(request: Request):
     """HTMX endpoint: Get all materials for datalist (cached)."""
-    import re
-
     def format_name(name: str) -> str:
         spaced = re.sub(r'([a-z])([A-Z])', r'\1 \2', name)
         return spaced.title()
@@ -246,12 +246,6 @@ async def create_listing(
         except ValueError:
             pass
 
-    # Sanitize optional string fields (empty strings and "None" become None)
-    def clean_str(val: Optional[str]) -> Optional[str]:
-        if not val or val.strip() == "" or val.strip().lower() == "none":
-            return None
-        return val.strip()
-
     listing = Listing(
         user_id=user.id,
         material_ticker=material_ticker.upper(),
@@ -359,12 +353,6 @@ async def update_listing(
     if listing.user_id != user.id:
         raise HTTPException(status_code=403, detail="Not your listing")
 
-    # Sanitize optional string fields (empty strings and "None" become None)
-    def clean_str(val: Optional[str]) -> Optional[str]:
-        if not val or val.strip() == "" or val.strip().lower() == "none":
-            return None
-        return val.strip()
-
     listing.material_ticker = material_ticker.upper()
     listing.quantity = quantity
     listing.price_type = PriceType(price_type)
@@ -411,7 +399,7 @@ async def delete_listing(
 
     # Capture details before deletion
     material = listing.material_ticker
-    listing_id = listing.id
+    deleted_id = listing.id
 
     db.delete(listing)
     db.commit()
@@ -421,7 +409,7 @@ async def delete_listing(
         AuditAction.LISTING_DELETED,
         user_id=user.id,
         entity_type="listing",
-        entity_id=listing_id,
+        entity_id=deleted_id,
         details={"material": material},
     )
 

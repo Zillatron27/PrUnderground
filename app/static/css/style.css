@@ -860,12 +860,13 @@ body.loading #global-spinner::after {
     table-layout: auto;
 }
 
-.profile-listings .qty-cell {
+/* Stock status in quantity cells - used in browse, profile, dashboard */
+.qty-cell {
     min-width: 180px;
     white-space: nowrap;
 }
 
-.profile-listings .qty-cell .badge {
+.qty-cell .badge {
     margin-left: var(--space-sm);
 }
 

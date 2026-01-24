@@ -25,8 +25,15 @@ You *can* run it just for yourself as a personal storefront, but the real value 
 - **Browse & Search** - Filter by material or location. Find who's selling what you need.
 
 ## Screenshots
+<img width="1024" height="768" alt="login" src="https://github.com/user-attachments/assets/ad45758e-068e-4597-b751-8cd1264b6eae" />
 
-Coming soon! 🙈
+<img width="1024" height="768" alt="dashboard" src="https://github.com/user-attachments/assets/d1cfaf9c-a735-4c02-a3b6-96026298c3e3" />
+
+<img width="1024" height="768" alt="publicprofile" src="https://github.com/user-attachments/assets/1aa5d7dd-7957-4f34-b9b3-c9838e052cc3" />
+
+<img width="1024" height="768" alt="browse" src="https://github.com/user-attachments/assets/cc3712e0-6929-4800-b872-87890384af69" />
+
+<img width="1024" height="768" alt="account" src="https://github.com/user-attachments/assets/ba3024ca-20a1-47df-960d-0ca2a193c9f9" />
 
 ## Setup
 

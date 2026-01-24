@@ -105,6 +105,7 @@ FIO_API_BASE=https://rest.fnar.net
 - [ ] Multi-part listings
 - [ ] Discord integration
 - [ ] Custom copy templates
+- [ ] User data export/import
 - [ ] Multi-community support
 
 ## Contributing

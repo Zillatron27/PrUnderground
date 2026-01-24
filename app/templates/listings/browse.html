@@ -38,6 +38,7 @@
     </form>
 
     {% if listings %}
+    <div class="table-wrapper">
     <table class="listings-table">
         <thead>
             <tr>
@@ -69,6 +70,7 @@
             {% endfor %}
         </tbody>
     </table>
+    </div>
     {% else %}
     <div class="empty-state">
         <p>No listings found{% if filter_material or filter_location %} matching your filters{% endif %}.</p>

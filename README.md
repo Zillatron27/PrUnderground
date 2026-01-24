@@ -16,7 +16,7 @@ You *can* run it just for yourself as a personal storefront, but the real value 
 
 ## Features
 
-- **FIO Integration** - Login with your FIO username and API key. We pull your company info, bases, and storage locations automatically.
+- **FIO Integration** - Login with your FIO username and API key. We pull your company info, bases, and storage locations automatically. Data is cached for 10 minutes with manual refresh option.
 - **Live Inventory** - Link listings to your actual storage. Shows "FIO-real-time" availability (stock minus your defined reserve).
 - **Flexible Pricing** - Set absolute prices, CX-relative prices (e.g., "CX - 10%"), or just "Contact me" for negotiated deals.
 - **Expiring Deals** - Mark listings as specials with optional expiry dates. Expired listings auto-hide.
@@ -73,12 +73,12 @@ DATABASE_URL=sqlite:///./prununderground.db
 
 - **Backend**: Python, FastAPI
 - **Database**: SQLite (easy to swap for Postgres later)
-- **Frontend**: Jinja2 templates, vanilla JS, minimal CSS
+- **Frontend**: Jinja2 templates, HTMX, vanilla JS, APEX-inspired dark theme
 - **Data**: [FIO API](https://doc.fnar.net/) for Prosperous Universe game data
 
 ## Roadmap
 
-- [ ] UI polish and mobile responsiveness
+- [x] UI polish and mobile responsiveness
 - [ ] Bulk listing creation from production buildings
 - [ ] Discord bot for search commands (maybe)
 - [ ] Multi-community support

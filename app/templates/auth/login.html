@@ -13,6 +13,7 @@
     {% endif %}
 
     <form action="/auth/check-user" method="post" class="auth-form">
+        <input type="hidden" name="{{ csrf_field_name }}" value="{{ csrf_token }}">
         <div class="form-group">
             <label for="fio_username">FIO Username</label>
             <input type="text" id="fio_username" name="fio_username"
@@ -56,6 +57,7 @@
     {% endif %}
 
     <form action="/auth/connect" method="post" class="auth-form">
+        <input type="hidden" name="{{ csrf_field_name }}" value="{{ csrf_token }}">
         <input type="hidden" name="fio_username" value="{{ fio_username }}">
 
         <div class="form-group">

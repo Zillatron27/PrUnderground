@@ -63,6 +63,7 @@
         </p>
 
         <form action="/auth/refresh-key" method="post" class="account-form">
+            <input type="hidden" name="{{ csrf_field_name }}" value="{{ csrf_token }}">
             <div class="form-group">
                 <label for="fio_api_key">New API Key</label>
                 <input type="password" id="fio_api_key" name="fio_api_key" required

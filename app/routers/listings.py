@@ -11,11 +11,23 @@ from ..schemas import ListingCreate, ListingUpdate
 from ..fio_client import FIOClient, extract_active_production, extract_storage_locations
 from ..fio_cache import fio_cache
 from ..utils import format_price
+from ..audit import log_audit, AuditAction
+from ..csrf import get_csrf_token, set_csrf_cookie, verify_csrf, CSRF_FORM_FIELD
 from .auth import get_current_user, require_user
 
 router = APIRouter()
 templates = Jinja2Templates(directory="app/templates")
 templates.env.globals["format_price"] = format_price
+templates.env.globals["csrf_field_name"] = CSRF_FORM_FIELD
+
+
+def render_template(request: Request, template_name: str, context: dict, status_code: int = 200):
+    """Render a template with CSRF token automatically added."""
+    csrf_token = get_csrf_token(request)
+    context["csrf_token"] = csrf_token
+    response = templates.TemplateResponse(template_name, context, status_code=status_code)
+    set_csrf_cookie(response, csrf_token)
+    return response
 
 
 @router.get("/", response_class=HTMLResponse)
@@ -117,7 +129,8 @@ async def new_listing_form(
     """Show the new listing form. FIO data loaded via HTMX."""
     user = require_user(request, db)
 
-    return templates.TemplateResponse(
+    return render_template(
+        request,
         "listings/form.html",
         {
             "request": request,
@@ -208,9 +221,11 @@ async def create_listing(
     storage_name: Optional[str] = Form(None),
     reserve_quantity: Optional[int] = Form(None),
     expires_at: Optional[str] = Form(None),
+    csrf_token: Optional[str] = Form(None),
     db: Session = Depends(get_db),
 ):
     """Create a new listing."""
+    await verify_csrf(request, csrf_token)
     user = get_current_user(request, db)
     if not user:
         return RedirectResponse(url="/auth/login", status_code=303)
@@ -254,6 +269,16 @@ async def create_listing(
     )
     db.add(listing)
     db.commit()
+    db.refresh(listing)
+
+    log_audit(
+        db,
+        AuditAction.LISTING_CREATED,
+        user_id=user.id,
+        entity_type="listing",
+        entity_id=listing.id,
+        details={"material": material_ticker.upper()},
+    )
 
     return RedirectResponse(url="/dashboard", status_code=303)
 
@@ -273,7 +298,8 @@ async def edit_listing_form(
     if listing.user_id != user.id:
         raise HTTPException(status_code=403, detail="Not your listing")
 
-    return templates.TemplateResponse(
+    return render_template(
+        request,
         "listings/form.html",
         {
             "request": request,
@@ -302,9 +328,11 @@ async def update_listing(
     storage_name: Optional[str] = Form(None),
     reserve_quantity: Optional[int] = Form(None),
     expires_at: Optional[str] = Form(None),
+    csrf_token: Optional[str] = Form(None),
     db: Session = Depends(get_db),
 ):
     """Update an existing listing."""
+    await verify_csrf(request, csrf_token)
     # Select the right price value based on price type
     if price_type == "absolute":
         price_value = price_value_absolute
@@ -352,6 +380,15 @@ async def update_listing(
 
     db.commit()
 
+    log_audit(
+        db,
+        AuditAction.LISTING_UPDATED,
+        user_id=user.id,
+        entity_type="listing",
+        entity_id=listing.id,
+        details={"material": material_ticker.upper()},
+    )
+
     return RedirectResponse(url="/dashboard", status_code=303)
 
 
@@ -359,9 +396,11 @@ async def update_listing(
 async def delete_listing(
     request: Request,
     listing_id: int,
+    csrf_token: Optional[str] = Form(None),
     db: Session = Depends(get_db),
 ):
     """Delete a listing."""
+    await verify_csrf(request, csrf_token)
     user = require_user(request, db)
     listing = db.query(Listing).filter(Listing.id == listing_id).first()
 
@@ -370,7 +409,20 @@ async def delete_listing(
     if listing.user_id != user.id:
         raise HTTPException(status_code=403, detail="Not your listing")
 
+    # Capture details before deletion
+    material = listing.material_ticker
+    listing_id = listing.id
+
     db.delete(listing)
     db.commit()
+
+    log_audit(
+        db,
+        AuditAction.LISTING_DELETED,
+        user_id=user.id,
+        entity_type="listing",
+        entity_id=listing_id,
+        details={"material": material},
+    )
 
     return RedirectResponse(url="/dashboard", status_code=303)

@@ -1,4 +1,5 @@
 import os
+import logging
 from datetime import datetime
 from contextlib import asynccontextmanager
 from dotenv import load_dotenv
@@ -8,8 +9,11 @@ load_dotenv()
 from fastapi import FastAPI, Request, Depends
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
-from fastapi.responses import HTMLResponse
+from fastapi.responses import HTMLResponse, PlainTextResponse
 from sqlalchemy.orm import Session
+from slowapi import Limiter, _rate_limit_exceeded_handler
+from slowapi.util import get_remote_address
+from slowapi.errors import RateLimitExceeded
 
 from .database import engine, Base, get_db
 from .models import User, Listing, PriceType
@@ -18,9 +22,21 @@ from .routers.auth import get_current_user, require_user
 from .fio_client import FIOClient, extract_active_production, extract_storage_locations
 from .fio_cache import fio_cache
 from .utils import format_price
+from .audit import AuditLog, log_audit, AuditAction  # Import to register model
+from .csrf import get_csrf_token, set_csrf_cookie, verify_csrf, CSRF_FORM_FIELD
+
+# Configure logging
+logging.basicConfig(
+    level=logging.INFO,
+    format="%(asctime)s - %(name)s - %(levelname)s - %(message)s",
+)
+logger = logging.getLogger(__name__)
 
 # Create database tables
 Base.metadata.create_all(bind=engine)
+
+# Rate limiter setup
+limiter = Limiter(key_func=get_remote_address)
 
 
 @asynccontextmanager
@@ -37,6 +53,20 @@ app = FastAPI(
     lifespan=lifespan,
 )
 
+# Attach rate limiter to app
+app.state.limiter = limiter
+
+
+
+
+# Custom rate limit exceeded handler
+@app.exception_handler(RateLimitExceeded)
+async def rate_limit_handler(request: Request, exc: RateLimitExceeded):
+    return PlainTextResponse(
+        content=f"Rate limit exceeded. Please try again later. Limit: {exc.detail}",
+        status_code=429,
+    )
+
 # Mount static files
 app.mount("/static", StaticFiles(directory="app/static"), name="static")
 
@@ -44,8 +74,21 @@ app.mount("/static", StaticFiles(directory="app/static"), name="static")
 templates = Jinja2Templates(directory="app/templates")
 
 
-# Add helper to Jinja2 globals
+# Add helpers to Jinja2 globals
 templates.env.globals["format_price"] = format_price
+templates.env.globals["csrf_field_name"] = CSRF_FORM_FIELD
+
+
+def render_template(request: Request, template_name: str, context: dict):
+    """
+    Render a template with CSRF token automatically added.
+    Returns a TemplateResponse with CSRF cookie set.
+    """
+    csrf_token = get_csrf_token(request)
+    context["csrf_token"] = csrf_token
+    response = templates.TemplateResponse(template_name, context)
+    set_csrf_cookie(response, csrf_token)
+    return response
 
 # Include routers
 app.include_router(auth.router, prefix="/auth", tags=["auth"])
@@ -89,7 +132,8 @@ async def dashboard(request: Request, db: Session = Depends(get_db)):
     # Get cache status for display
     cache_status = fio_cache.get_cache_status(user.fio_username)
 
-    return templates.TemplateResponse(
+    return render_template(
+        request,
         "dashboard.html",
         {
             "request": request,
@@ -154,7 +198,7 @@ async def fetch_and_cache_fio_data(user: User, force_refresh: bool = False):
             fio_cache.set_last_refresh(username)
 
         except Exception as e:
-            print(f"DEBUG: FIO fetch error: {e}")
+            logger.error(f"FIO fetch error for {username}: {e}")
         finally:
             await client.close()
 
@@ -203,7 +247,8 @@ async def dashboard_inventory(request: Request, db: Session = Depends(get_db)):
                 "available": available,
             }
 
-    return templates.TemplateResponse(
+    return render_template(
+        request,
         "partials/dashboard_inventory.html",
         {
             "request": request,
@@ -216,6 +261,7 @@ async def dashboard_inventory(request: Request, db: Session = Depends(get_db)):
 
 
 @app.post("/api/fio/refresh", response_class=HTMLResponse)
+@limiter.limit("5/minute")
 async def refresh_fio_data(request: Request, db: Session = Depends(get_db)):
     """Force refresh FIO data from API, bypassing cache."""
     user = require_user(request, db)
@@ -223,6 +269,9 @@ async def refresh_fio_data(request: Request, db: Session = Depends(get_db)):
     # Invalidate cache and fetch fresh
     fio_cache.invalidate_user(user.fio_username)
     await fetch_and_cache_fio_data(user, force_refresh=True)
+
+    # Audit log
+    log_audit(db, AuditAction.FIO_REFRESH, user_id=user.id)
 
     # Return updated cache status
     cache_status = fio_cache.get_cache_status(user.fio_username)

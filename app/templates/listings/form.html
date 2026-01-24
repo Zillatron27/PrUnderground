@@ -5,6 +5,7 @@
     <h1>{% if listing %}Edit{% else %}Create{% endif %} Listing</h1>
 
     <form method="post" action="{% if listing %}/listings/{{ listing.id }}/edit{% else %}/listings/new{% endif %}" class="listing-form">
+        <input type="hidden" name="{{ csrf_field_name }}" value="{{ csrf_token }}">
         <div class="form-group">
             <label for="material_ticker">Material Ticker</label>
             <input type="text" id="material_ticker" name="material_ticker"

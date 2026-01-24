@@ -1,0 +1,10 @@
+{% if suggestions %}
+<p>You're currently producing these materials:</p>
+<div class="suggestion-chips">
+    {% for material in suggestions %}
+    <a href="/listings/new?material={{ material }}" class="chip">{{ material }}</a>
+    {% endfor %}
+</div>
+{% else %}
+<p class="text-dim">No active production found, or FIO data unavailable.</p>
+{% endif %}

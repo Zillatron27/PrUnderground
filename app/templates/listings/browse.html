@@ -13,10 +13,7 @@
                        placeholder="e.g., RAT, DW, FE"
                        list="material-list"
                        autocomplete="off">
-                <datalist id="material-list">
-                    {% for mat in all_materials %}
-                    <option value="{{ mat.ticker }}">{{ mat.name }}</option>
-                    {% endfor %}
+                <datalist id="material-list" hx-get="/listings/api/materials" hx-trigger="load" hx-swap="innerHTML">
                 </datalist>
                 <span class="help-text">Comma-separated for multiple</span>
             </div>

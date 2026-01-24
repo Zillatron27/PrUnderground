@@ -11,13 +11,8 @@
                    value="{{ listing.material_ticker if listing else request.query_params.get('material', '') }}"
                    required maxlength="10" placeholder="e.g., RAT, DW, OVE"
                    list="material-suggestions">
-            {% if suggestions %}
-            <datalist id="material-suggestions">
-                {% for mat in suggestions %}
-                <option value="{{ mat }}">
-                {% endfor %}
+            <datalist id="material-suggestions" hx-get="/listings/api/suggestions" hx-trigger="load" hx-swap="innerHTML">
             </datalist>
-            {% endif %}
         </div>
 
         <div class="form-group">
@@ -102,46 +97,21 @@
 
         <div class="form-group">
             <label>Location & Inventory</label>
-            {% if storages %}
             <p class="help-text">Select a storage for live inventory tracking, or type a custom location</p>
-            {% endif %}
         </div>
         <div class="form-row">
-            <div class="form-group">
+            <div class="form-group fio-data-container" id="storage-container">
+                <div class="fio-data-overlay fio-data-overlay-inline">
+                    <div class="spinner-data spinner-sm"></div>
+                    <span>Loading storages...</span>
+                </div>
                 <label for="storage_id">Sell From</label>
-                {% if storages %}
-                <select id="storage_id" name="storage_id" onchange="updateLocationFromStorage()">
-                    <option value="">Custom location...</option>
-                    {% set cx_storages = storages | selectattr('is_cx') | list %}
-                    {% set other_storages = storages | rejectattr('is_cx') | list %}
-                    {% if cx_storages %}
-                    <optgroup label="CX Stations">
-                        {% for storage in cx_storages %}
-                        <option value="{{ storage.addressable_id }}"
-                                data-name="{{ storage.name }}"
-                                {% if listing and listing.storage_id == storage.addressable_id %}selected{% endif %}>
-                            {{ storage.name }}
-                        </option>
-                        {% endfor %}
-                    </optgroup>
-                    {% endif %}
-                    {% if other_storages %}
-                    <optgroup label="Planets">
-                        {% for storage in other_storages %}
-                        <option value="{{ storage.addressable_id }}"
-                                data-name="{{ storage.name }}"
-                                {% if listing and listing.storage_id == storage.addressable_id %}selected{% endif %}>
-                            {{ storage.name }}{% if storage.type == 'STORE' %} (Base){% else %} (Warehouse){% endif %}
-                        </option>
-                        {% endfor %}
-                    </optgroup>
-                    {% endif %}
+                <select id="storage_id" name="storage_id" onchange="updateLocationFromStorage()"
+                        hx-get="/listings/api/storages{% if listing and listing.storage_id %}?selected={{ listing.storage_id }}{% endif %}"
+                        hx-trigger="load"
+                        hx-swap="innerHTML">
+                    <option value="">Loading...</option>
                 </select>
-                {% else %}
-                <select id="storage_id" name="storage_id" disabled>
-                    <option value="">No FIO connection</option>
-                </select>
-                {% endif %}
             </div>
             <div class="form-group" id="custom-location-group">
                 <label for="location">Location</label>
@@ -150,7 +120,6 @@
                        placeholder="e.g., Moria Station">
             </div>
         </div>
-        {% if storages %}
         <div class="form-row" id="reserve-row" style="display:none">
             <div class="form-group">
                 <label for="reserve_quantity">Reserve (keep in stock)</label>
@@ -160,7 +129,6 @@
                 <p class="help-text">Amount to keep - won't be shown as available</p>
             </div>
         </div>
-        {% endif %}
         <input type="hidden" id="storage_name" name="storage_name"
                value="{{ listing.storage_name if listing else '' }}">
 
@@ -231,7 +199,23 @@ function updateLocationFromStorage() {
 document.addEventListener('DOMContentLoaded', function() {
     togglePriceFields();
     toggleExpiryField();
-    updateLocationFromStorage();
+});
+
+// Show loading state for storage select
+document.body.addEventListener('htmx:beforeRequest', function(evt) {
+    if (evt.detail.pathInfo.requestPath.includes('/api/storages')) {
+        const container = document.getElementById('storage-container');
+        if (container) container.classList.add('loading');
+    }
+});
+
+// After storages load, update UI and hide overlay
+document.body.addEventListener('htmx:afterSwap', function(evt) {
+    if (evt.detail.pathInfo.requestPath.includes('/api/storages')) {
+        const container = document.getElementById('storage-container');
+        if (container) container.classList.remove('loading');
+        updateLocationFromStorage();
+    }
 });
 </script>
 {% endblock %}

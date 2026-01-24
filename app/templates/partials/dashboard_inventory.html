@@ -1,0 +1,46 @@
+{% for listing in listings %}
+{% set is_expired = listing.expires_at and listing.expires_at < now %}
+<tr class="{% if is_expired %}listing-expired{% endif %}" data-listing-id="{{ listing.id }}">
+    <td><strong>{{ listing.material_ticker }}</strong></td>
+    <td>
+        {% if listing.id in listing_inventory %}
+            {% set inv = listing_inventory[listing.id] %}
+            <span class="live-inventory" title="{{ inv.actual }} in stock - {{ inv.reserve }} reserved">
+                {{ inv.available }}
+                <small class="inventory-detail">({{ inv.actual }} - {{ inv.reserve }})</small>
+            </span>
+        {% elif listing.quantity %}
+            {{ listing.quantity }}
+        {% else %}
+            —
+        {% endif %}
+    </td>
+    <td>{{ format_price(listing) }}</td>
+    <td>{{ listing.storage_name or listing.location or '—' }}</td>
+    <td>
+        <span class="badge badge-{{ listing.listing_type.value }}">
+            {{ listing.listing_type.value }}
+        </span>
+        {% if listing.expires_at %}
+            {% if is_expired %}
+            <span class="badge badge-expired">Expired</span>
+            {% else %}
+            <span class="expiry-info">
+                expires {{ listing.expires_at.strftime('%d %b') }}
+            </span>
+            {% endif %}
+        {% endif %}
+    </td>
+    <td class="notes-cell" {% if listing.notes %}title="{{ listing.notes }}"{% endif %}>
+        {{ listing.notes or '—' }}
+    </td>
+    <td>{{ listing.updated_at.strftime('%Y-%m-%d') }}</td>
+    <td class="actions">
+        <a href="/listings/{{ listing.id }}/edit" class="btn btn-sm">Edit</a>
+        <form action="/listings/{{ listing.id }}/delete" method="post" style="display:inline">
+            <button type="submit" class="btn btn-sm btn-danger"
+                    onclick="return confirm('Delete this listing?')">Delete</button>
+        </form>
+    </td>
+</tr>
+{% endfor %}

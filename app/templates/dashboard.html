@@ -12,76 +12,93 @@
             </p>
         </div>
         <div class="dashboard-actions">
+            <button class="btn btn-secondary" id="refresh-fio-btn"
+                    hx-post="/api/fio/refresh"
+                    hx-target="#fio-status"
+                    hx-swap="innerHTML">
+                <span class="btn-spinner htmx-indicator">
+                    <span class="spinner-data spinner-sm"></span>
+                </span>
+                Refresh FIO Data
+            </button>
             <a href="/listings/new" class="btn btn-primary">+ New Listing</a>
         </div>
     </header>
+
+    <div class="fio-status-bar" id="fio-status">
+        {% if cache_status.last_refresh %}
+        <span class="fio-refresh-status">FIO data cached</span>
+        {% else %}
+        <span class="fio-refresh-status">FIO data not loaded</span>
+        {% endif %}
+    </div>
 
     <section class="my-listings">
         <h2>Your Listings</h2>
 
         {% if listings %}
-        <table class="listings-table">
-            <thead>
-                <tr>
-                    <th>Material</th>
-                    <th>Quantity</th>
-                    <th>Price</th>
-                    <th>Location</th>
-                    <th>Type</th>
-                    <th>Notes</th>
-                    <th>Updated</th>
-                    <th>Actions</th>
-                </tr>
-            </thead>
-            <tbody>
-                {% for listing in listings %}
-                {% set is_expired = listing.expires_at and listing.expires_at < now %}
-                <tr class="{% if is_expired %}listing-expired{% endif %}">
-                    <td><strong>{{ listing.material_ticker }}</strong></td>
-                    <td>
-                        {% if listing.id in listing_inventory %}
-                            {% set inv = listing_inventory[listing.id] %}
-                            <span class="live-inventory" title="{{ inv.actual }} in stock - {{ inv.reserve }} reserved">
-                                {{ inv.available }}
-                                <small class="inventory-detail">({{ inv.actual }} - {{ inv.reserve }})</small>
-                            </span>
-                        {% elif listing.quantity %}
-                            {{ listing.quantity }}
-                        {% else %}
-                            —
-                        {% endif %}
-                    </td>
-                    <td>{{ format_price(listing) }}</td>
-                    <td>{{ listing.storage_name or listing.location or '—' }}</td>
-                    <td>
-                        <span class="badge badge-{{ listing.listing_type.value }}">
-                            {{ listing.listing_type.value }}
-                        </span>
-                        {% if listing.expires_at %}
-                            {% if is_expired %}
-                            <span class="badge badge-expired">Expired</span>
+        <div class="fio-data-container" id="inventory-container">
+            <div class="fio-data-overlay">
+                <div class="spinner-data"></div>
+                <span>Refreshing from FIO...</span>
+            </div>
+            <table class="listings-table">
+                <thead>
+                    <tr>
+                        <th>Material</th>
+                        <th>Quantity</th>
+                        <th>Price</th>
+                        <th>Location</th>
+                        <th>Type</th>
+                        <th>Notes</th>
+                        <th>Updated</th>
+                        <th>Actions</th>
+                    </tr>
+                </thead>
+                <tbody id="inventory-tbody" hx-get="/api/dashboard/inventory" hx-trigger="load, fioRefresh from:body" hx-swap="innerHTML">
+                    {% for listing in listings %}
+                    {% set is_expired = listing.expires_at and listing.expires_at < now %}
+                    <tr class="{% if is_expired %}listing-expired{% endif %}">
+                        <td><strong>{{ listing.material_ticker }}</strong></td>
+                        <td>
+                            {% if listing.quantity %}
+                                {{ listing.quantity }}
                             {% else %}
-                            <span class="expiry-info" data-expires="{{ listing.expires_at.strftime('%Y-%m-%d') }}">
-                                expires <span class="locale-date">{{ listing.expires_at.strftime('%d %b') }}</span>
-                            </span>
+                                <span class="fio-loading-inline"><span class="spinner-data spinner-sm"></span></span>
                             {% endif %}
-                        {% endif %}
-                    </td>
-                    <td class="notes-cell" {% if listing.notes %}title="{{ listing.notes }}"{% endif %}>
-                        {{ listing.notes or '—' }}
-                    </td>
-                    <td>{{ listing.updated_at.strftime('%Y-%m-%d') }}</td>
-                    <td class="actions">
-                        <a href="/listings/{{ listing.id }}/edit" class="btn btn-sm">Edit</a>
-                        <form action="/listings/{{ listing.id }}/delete" method="post" style="display:inline">
-                            <button type="submit" class="btn btn-sm btn-danger"
-                                    onclick="return confirm('Delete this listing?')">Delete</button>
-                        </form>
-                    </td>
-                </tr>
-                {% endfor %}
-            </tbody>
-        </table>
+                        </td>
+                        <td>{{ format_price(listing) }}</td>
+                        <td>{{ listing.storage_name or listing.location or '—' }}</td>
+                        <td>
+                            <span class="badge badge-{{ listing.listing_type.value }}">
+                                {{ listing.listing_type.value }}
+                            </span>
+                            {% if listing.expires_at %}
+                                {% if is_expired %}
+                                <span class="badge badge-expired">Expired</span>
+                                {% else %}
+                                <span class="expiry-info">
+                                    expires {{ listing.expires_at.strftime('%d %b') }}
+                                </span>
+                                {% endif %}
+                            {% endif %}
+                        </td>
+                        <td class="notes-cell" {% if listing.notes %}title="{{ listing.notes }}"{% endif %}>
+                            {{ listing.notes or '—' }}
+                        </td>
+                        <td>{{ listing.updated_at.strftime('%Y-%m-%d') }}</td>
+                        <td class="actions">
+                            <a href="/listings/{{ listing.id }}/edit" class="btn btn-sm">Edit</a>
+                            <form action="/listings/{{ listing.id }}/delete" method="post" style="display:inline">
+                                <button type="submit" class="btn btn-sm btn-danger"
+                                        onclick="return confirm('Delete this listing?')">Delete</button>
+                            </form>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
         {% else %}
         <div class="empty-state">
             <p>You don't have any listings yet.</p>
@@ -90,48 +107,83 @@
         {% endif %}
     </section>
 
-    {% if suggestions %}
     <section class="suggestions">
         <h2>Quick Add from Your Production</h2>
-        <p>You're currently producing these materials:</p>
-        <div class="suggestion-chips">
-            {% for material in suggestions %}
-            <a href="/listings/new?material={{ material }}" class="chip">{{ material }}</a>
-            {% endfor %}
+        <div class="fio-data-container" id="suggestions-container">
+            <div class="fio-data-overlay">
+                <div class="spinner-data"></div>
+                <span>Refreshing from FIO...</span>
+            </div>
+            <div id="suggestions-content" hx-get="/api/dashboard/suggestions" hx-trigger="load, fioRefresh from:body" hx-swap="innerHTML">
+                {% include 'partials/fio_loading.html' %}
+            </div>
         </div>
     </section>
-    {% endif %}
 
     <section class="discord-export">
         <h2>Share to Discord</h2>
-        <p>Copy your listings formatted for Discord:</p>
-        <button class="btn btn-secondary" onclick="copyDiscordFormat()">
+        <p>Edit if needed, then copy:</p>
+        <div class="discord-preview-container">
+            <textarea id="discord-preview" class="discord-preview" rows="8" placeholder="Loading..."></textarea>
+        </div>
+        <button class="btn btn-secondary" id="copy-discord-btn" onclick="copyDiscordFormat()">
             Copy to Clipboard
         </button>
-        <div id="discord-preview" class="discord-preview" style="display:none"></div>
     </section>
 </div>
 
 <script>
-async function copyDiscordFormat() {
-    const response = await fetch('/u/{{ current_user.fio_username }}/discord');
-    const text = await response.text();
-    await navigator.clipboard.writeText(text);
-
+async function loadDiscordPreview() {
     const preview = document.getElementById('discord-preview');
-    preview.textContent = text;
-    preview.style.display = 'block';
-
-    alert('Copied to clipboard!');
+    try {
+        const response = await fetch('/u/{{ current_user.fio_username }}/discord');
+        preview.value = await response.text();
+    } catch (e) {
+        preview.value = 'Error loading preview';
+    }
 }
 
-// Format dates in user's locale
-document.querySelectorAll('.expiry-info').forEach(el => {
-    const dateStr = el.dataset.expires;
-    if (dateStr) {
-        const date = new Date(dateStr + 'T23:59:59');
-        const formatted = date.toLocaleDateString(undefined, { day: 'numeric', month: 'short' });
-        el.querySelector('.locale-date').textContent = formatted;
+async function copyDiscordFormat() {
+    const preview = document.getElementById('discord-preview');
+    const btn = document.getElementById('copy-discord-btn');
+
+    await navigator.clipboard.writeText(preview.value);
+
+    // Show copied feedback
+    const originalText = btn.textContent;
+    btn.textContent = 'Copied!';
+    btn.classList.add('btn-success');
+
+    setTimeout(() => {
+        btn.textContent = originalText;
+        btn.classList.remove('btn-success');
+    }, 2000);
+}
+
+// Load discord preview on page load
+document.addEventListener('DOMContentLoaded', loadDiscordPreview);
+
+// Show loading overlay on FIO containers during refresh
+document.body.addEventListener('htmx:beforeRequest', function(evt) {
+    if (evt.detail.pathInfo.requestPath === '/api/fio/refresh') {
+        document.querySelectorAll('.fio-data-container').forEach(el => {
+            el.classList.add('loading');
+        });
+    }
+});
+
+// Trigger refresh of FIO data sections after manual refresh
+document.body.addEventListener('htmx:afterRequest', function(evt) {
+    if (evt.detail.pathInfo.requestPath === '/api/fio/refresh') {
+        htmx.trigger(document.body, 'fioRefresh');
+    }
+    // Also hide overlay when inventory/suggestions finish loading
+    if (evt.detail.pathInfo.requestPath.includes('/api/dashboard/')) {
+        document.querySelectorAll('.fio-data-container').forEach(el => {
+            el.classList.remove('loading');
+        });
+        // Update discord preview when inventory changes
+        loadDiscordPreview();
     }
 });
 </script>

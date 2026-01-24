@@ -1,0 +1,29 @@
+{% if storages %}
+<option value="">Custom location...</option>
+{% set cx_storages = storages | selectattr('is_cx') | list %}
+{% set other_storages = storages | rejectattr('is_cx') | list %}
+{% if cx_storages %}
+<optgroup label="CX Stations">
+    {% for storage in cx_storages %}
+    <option value="{{ storage.addressable_id }}"
+            data-name="{{ storage.name }}"
+            {% if selected == storage.addressable_id %}selected{% endif %}>
+        {{ storage.name }}
+    </option>
+    {% endfor %}
+</optgroup>
+{% endif %}
+{% if other_storages %}
+<optgroup label="Planets">
+    {% for storage in other_storages %}
+    <option value="{{ storage.addressable_id }}"
+            data-name="{{ storage.name }}"
+            {% if selected == storage.addressable_id %}selected{% endif %}>
+        {{ storage.name }}{% if storage.type == 'STORE' %} (Base){% else %} (Warehouse){% endif %}
+    </option>
+    {% endfor %}
+</optgroup>
+{% endif %}
+{% else %}
+<option value="">No FIO connection</option>
+{% endif %}

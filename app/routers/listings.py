@@ -9,6 +9,7 @@ from ..database import get_db
 from ..models import User, Listing, PriceType, ListingType
 from ..schemas import ListingCreate, ListingUpdate
 from ..fio_client import FIOClient, extract_active_production, extract_storage_locations
+from ..fio_cache import fio_cache
 from ..utils import format_price
 from .auth import get_current_user, require_user
 
@@ -24,7 +25,7 @@ async def browse_listings(
     location: Optional[str] = Query(None),
     db: Session = Depends(get_db),
 ):
-    """Browse all listings, optionally filtered."""
+    """Browse all listings, optionally filtered. Materials datalist loaded via HTMX."""
     now = datetime.utcnow()
     query = db.query(Listing).join(User)
 
@@ -51,27 +52,7 @@ async def browse_listings(
     listings = query.order_by(Listing.updated_at.desc()).all()
     current_user = get_current_user(request, db)
 
-    # Fetch all materials from FIO (cached would be better but this works)
-    all_materials = []
-    try:
-        client = FIOClient()
-        raw_materials = await client.get_all_materials()
-        # Format names: split camelCase and capitalize words
-        import re
-        def format_name(name: str) -> str:
-            # Insert space before uppercase letters, then title case
-            spaced = re.sub(r'([a-z])([A-Z])', r'\1 \2', name)
-            return spaced.title()
-
-        all_materials = sorted(
-            [{"ticker": m["Ticker"], "name": format_name(m["Name"])} for m in raw_materials],
-            key=lambda x: x["ticker"]
-        )
-        await client.close()
-    except Exception:
-        pass
-
-    # Get unique locations from active listings
+    # Get unique locations from active listings (from DB, no FIO call)
     location_query = db.query(Listing).filter(
         (Listing.expires_at.is_(None)) | (Listing.expires_at > now)
     )
@@ -91,9 +72,40 @@ async def browse_listings(
             "current_user": current_user,
             "filter_material": material or "",
             "filter_location": location or "",
-            "all_materials": all_materials,
             "available_locations": available_locations,
         },
+    )
+
+
+@router.get("/api/materials", response_class=HTMLResponse)
+async def get_materials_datalist(request: Request):
+    """HTMX endpoint: Get all materials for datalist (cached)."""
+    import re
+
+    def format_name(name: str) -> str:
+        spaced = re.sub(r'([a-z])([A-Z])', r'\1 \2', name)
+        return spaced.title()
+
+    # Check cache first
+    all_materials = fio_cache.get_all_materials()
+
+    if all_materials is None:
+        # Fetch from FIO
+        try:
+            client = FIOClient()
+            raw_materials = await client.get_all_materials()
+            all_materials = sorted(
+                [{"ticker": m["Ticker"], "name": format_name(m["Name"])} for m in raw_materials],
+                key=lambda x: x["ticker"]
+            )
+            fio_cache.set_all_materials(all_materials)
+            await client.close()
+        except Exception:
+            all_materials = []
+
+    return templates.TemplateResponse(
+        "partials/materials_datalist.html",
+        {"request": request, "all_materials": all_materials},
     )
 
 
@@ -102,30 +114,8 @@ async def new_listing_form(
     request: Request,
     db: Session = Depends(get_db),
 ):
-    """Show the new listing form with production suggestions."""
+    """Show the new listing form. FIO data loaded via HTMX."""
     user = require_user(request, db)
-
-    # Fetch what user is actually producing from FIO
-    suggestions = []
-    storages = []
-    if user.fio_api_key:
-        client = FIOClient(api_key=user.fio_api_key)
-        try:
-            production_lines = await client.get_user_production(user.fio_username)
-            active_materials = extract_active_production(production_lines)
-            suggestions = sorted(active_materials)
-
-            # Fetch storage locations
-            raw_storages = await client.get_user_storage(user.fio_username)
-            sites = await client.get_user_sites(user.fio_username)
-            warehouses = await client.get_user_warehouses(user.fio_username)
-            storages = extract_storage_locations(raw_storages, sites, warehouses)
-            # Filter to only WAREHOUSE_STORE and STORE types (skip fuel/ship stores)
-            storages = [s for s in storages if s["type"] in ("WAREHOUSE_STORE", "STORE")]
-        except Exception:
-            pass  # Fail silently, user can still add manually
-        finally:
-            await client.close()
 
     return templates.TemplateResponse(
         "listings/form.html",
@@ -134,10 +124,71 @@ async def new_listing_form(
             "title": "Create Listing",
             "user": user,
             "current_user": user,
-            "suggestions": suggestions,
-            "storages": storages,
             "listing": None,  # New listing, not editing
         },
+    )
+
+
+@router.get("/api/suggestions", response_class=HTMLResponse)
+async def get_suggestions_datalist(request: Request, db: Session = Depends(get_db)):
+    """HTMX endpoint: Get production suggestions for material picker (cached)."""
+    user = require_user(request, db)
+
+    suggestions = []
+    if user.fio_api_key:
+        # Check cache first
+        cached = fio_cache.get_suggestions(user.fio_username)
+        if cached is not None:
+            suggestions = cached
+        else:
+            # Fetch from FIO
+            try:
+                client = FIOClient(api_key=user.fio_api_key)
+                production_lines = await client.get_user_production(user.fio_username)
+                suggestions = sorted(extract_active_production(production_lines))
+                fio_cache.set_suggestions(user.fio_username, suggestions)
+                await client.close()
+            except Exception:
+                pass
+
+    return templates.TemplateResponse(
+        "partials/suggestions_datalist.html",
+        {"request": request, "suggestions": suggestions},
+    )
+
+
+@router.get("/api/storages", response_class=HTMLResponse)
+async def get_storages_select(
+    request: Request,
+    db: Session = Depends(get_db),
+    selected: Optional[str] = Query(None),
+):
+    """HTMX endpoint: Get storage locations for dropdown (cached)."""
+    user = require_user(request, db)
+
+    storages = []
+    if user.fio_api_key:
+        # Check cache first
+        cached = fio_cache.get_storage_locations(user.fio_username)
+        if cached is not None:
+            storages = [s for s in cached if s["type"] in ("WAREHOUSE_STORE", "STORE")]
+        else:
+            # Fetch from FIO
+            try:
+                client = FIOClient(api_key=user.fio_api_key)
+                raw_storages = await client.get_user_storage(user.fio_username)
+                sites = await client.get_user_sites(user.fio_username)
+                warehouses = await client.get_user_warehouses(user.fio_username)
+                all_storages = extract_storage_locations(raw_storages, sites, warehouses)
+                fio_cache.set_storage_locations(user.fio_username, all_storages)
+                storages = [s for s in all_storages if s["type"] in ("WAREHOUSE_STORE", "STORE")]
+                await client.close()
+            except Exception:
+                pass
+
+    return templates.TemplateResponse(
+        "partials/storages_select.html",
+        {"request": request, "storages": storages, "selected": selected},
     )
 
 
@@ -213,7 +264,7 @@ async def edit_listing_form(
     listing_id: int,
     db: Session = Depends(get_db),
 ):
-    """Show the edit form for a listing."""
+    """Show the edit form for a listing. FIO data loaded via HTMX."""
     user = require_user(request, db)
     listing = db.query(Listing).filter(Listing.id == listing_id).first()
 
@@ -221,21 +272,6 @@ async def edit_listing_form(
         raise HTTPException(status_code=404, detail="Listing not found")
     if listing.user_id != user.id:
         raise HTTPException(status_code=403, detail="Not your listing")
-
-    # Fetch storage locations for the dropdown
-    storages = []
-    if user.fio_api_key:
-        client = FIOClient(api_key=user.fio_api_key)
-        try:
-            raw_storages = await client.get_user_storage(user.fio_username)
-            sites = await client.get_user_sites(user.fio_username)
-            warehouses = await client.get_user_warehouses(user.fio_username)
-            storages = extract_storage_locations(raw_storages, sites, warehouses)
-            storages = [s for s in storages if s["type"] in ("WAREHOUSE_STORE", "STORE")]
-        except Exception:
-            pass
-        finally:
-            await client.close()
 
     return templates.TemplateResponse(
         "listings/form.html",
@@ -245,8 +281,6 @@ async def edit_listing_form(
             "user": user,
             "current_user": user,
             "listing": listing,
-            "suggestions": [],
-            "storages": storages,
         },
     )
 

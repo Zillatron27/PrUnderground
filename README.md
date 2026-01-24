@@ -79,6 +79,7 @@ DATABASE_URL=sqlite:///./prununderground.db
 ## Roadmap
 
 - [x] UI polish and mobile responsiveness
+- [ ] Mobile UI improvements
 - [ ] Bulk listing creation from production buildings
 - [ ] Discord bot for search commands (maybe)
 - [ ] Multi-community support

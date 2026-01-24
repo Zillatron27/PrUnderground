@@ -63,6 +63,16 @@ async def home(request: Request, db: Session = Depends(get_db)):
     )
 
 
+@app.get("/about")
+async def about(request: Request, db: Session = Depends(get_db)):
+    """About page."""
+    current_user = get_current_user(request, db)
+    return templates.TemplateResponse(
+        "about.html",
+        {"request": request, "title": "About", "current_user": current_user},
+    )
+
+
 @app.get("/dashboard")
 async def dashboard(request: Request, db: Session = Depends(get_db)):
     """User dashboard - loads fast, FIO data fetched via HTMX."""

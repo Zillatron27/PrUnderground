@@ -1746,3 +1746,18 @@ body.loading #global-spinner::after {
 .skeleton-text:last-child {
     width: 60%;
 }
+
+/* ========================================
+   About Page
+   ======================================== */
+.about-page h1 {
+    display: flex;
+    align-items: center;
+    gap: var(--space-sm);
+}
+
+.about-page .credits-section {
+    margin-top: var(--space-xl);
+    padding-top: var(--space-lg);
+    border-top: 1px solid var(--border-color);
+}

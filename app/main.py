@@ -25,7 +25,7 @@ from .template_utils import templates, render_template
 from .services.fio_sync import sync_user_fio_data, get_sync_staleness
 
 # App version - single source of truth
-__version__ = "1.0.0"
+__version__ = "1.0.1"
 
 # Configure logging
 logging.basicConfig(

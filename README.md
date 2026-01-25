@@ -16,13 +16,14 @@ You *can* run it just for yourself as a personal storefront, but the real value 
 
 ## Features
 
-- **FIO Integration** - Login with your FIO username and API key. We pull your company info, bases, and storage locations automatically. Data is cached for 10 minutes with manual refresh option.
+- **FIO Integration** - Login with your FIO username and API key. We pull your company info, bases, and storage locations automatically. Data syncs on login and refreshes on demand.
 - **Live Inventory** - Link listings to your actual storage. Shows "FIO-real-time" availability (stock minus your defined reserve).
 - **Flexible Pricing** - Set absolute prices, CX-relative prices (e.g., "CX - 10%"), or just "Contact me" for negotiated deals.
 - **Expiring Deals** - Mark listings as specials with optional expiry dates. Expired listings auto-hide.
 - **Public Profiles** - Shareable link to your listings page. Send it to your corp, pin it in Discord, whatever.
-- **Copy to Discord** - One click generates a formatted message ready to paste into any channel.
+- **Copy to Discord** - One click generates a formatted message (grouped by location) ready to paste into any channel.
 - **Browse & Search** - Filter by material or location. Find who's selling what you need.
+- **Import/Export** - Backup and restore your listings as JSON. Extensible format for future integrations.
 
 ## Screenshots
 <img width="1024" height="768" alt="login" src="https://github.com/user-attachments/assets/ad45758e-068e-4597-b751-8cd1264b6eae" />
@@ -101,11 +102,11 @@ FIO_API_BASE=https://rest.fnar.net
 ## Roadmap
 
 - [x] UI polish and mobile responsiveness
+- [x] User data export/import
 - [ ] Mobile UI improvements
 - [ ] Multi-part listings
 - [ ] Discord integration
 - [ ] Custom copy templates
-- [ ] User data export/import
 - [ ] Multi-community support
 
 ## Contributing

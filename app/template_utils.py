@@ -4,12 +4,15 @@ from fastapi import Request
 from fastapi.templating import Jinja2Templates
 
 from .csrf import get_csrf_token, set_csrf_cookie, CSRF_FORM_FIELD
-from .utils import format_price, get_stock_status
+from .utils import format_price, get_stock_status, is_sync_stale
+from .services.fio_sync import get_sync_staleness
 
 # Shared templates instance
 templates = Jinja2Templates(directory="app/templates")
 templates.env.globals["format_price"] = format_price
 templates.env.globals["get_stock_status"] = get_stock_status
+templates.env.globals["get_sync_staleness"] = get_sync_staleness
+templates.env.globals["is_sync_stale"] = is_sync_stale
 templates.env.globals["csrf_field_name"] = CSRF_FORM_FIELD
 
 

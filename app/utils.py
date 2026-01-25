@@ -1,5 +1,6 @@
 """Shared utility functions."""
 
+from datetime import datetime
 from typing import Optional
 
 from .models import PriceType
@@ -38,3 +39,11 @@ def get_stock_status(listing) -> Optional[str]:
     if listing.available_quantity <= 10:
         return "low"
     return None
+
+
+def is_sync_stale(user, hours: int = 24) -> bool:
+    """Check if user's FIO sync is older than specified hours."""
+    if not user or not user.fio_last_synced:
+        return True
+    age = datetime.utcnow() - user.fio_last_synced
+    return age.total_seconds() > (hours * 3600)

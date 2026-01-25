@@ -10,6 +10,7 @@ from ..models import User, Listing, PriceType, ListingType
 from ..fio_client import FIOClient, extract_active_production, extract_storage_locations
 from ..fio_cache import fio_cache
 from ..utils import format_price, clean_str
+from ..services.fio_sync import get_sync_staleness
 from ..audit import log_audit, AuditAction
 from ..csrf import verify_csrf
 from ..template_utils import templates, render_template

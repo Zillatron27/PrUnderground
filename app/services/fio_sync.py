@@ -67,9 +67,8 @@ async def sync_user_fio_data(user: User, db: Session, force: bool = False) -> bo
                 actual = items.get(listing.material_ticker, 0)
                 reserve = listing.reserve_quantity or 0
                 listing.available_quantity = max(0, actual - reserve)
-            else:
-                # No storage linked or storage not found
-                listing.available_quantity = None
+            # If no storage linked or storage not found, keep existing value
+            # (stale data is better than no data)
 
         # Update sync timestamp
         user.fio_last_synced = datetime.utcnow()

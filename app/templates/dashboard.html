@@ -25,11 +25,15 @@
         </div>
     </header>
 
-    <div class="fio-status-bar" id="fio-status">
-        {% if cache_status.last_refresh %}
-        <span class="fio-refresh-status">FIO data cached</span>
+    <div class="fio-status-bar" id="fio-status"
+         hx-get="/api/dashboard/status" hx-trigger="fioLoaded from:body" hx-swap="innerHTML">
+        {% if current_user.fio_last_synced %}
+        <span class="fio-refresh-status">FIO data updated: {{ get_sync_staleness(current_user) }}</span>
         {% else %}
-        <span class="fio-refresh-status">FIO data not loaded</span>
+        <span class="fio-refresh-status fio-loading-inline">
+            <span class="spinner-data spinner-sm"></span>
+            Syncing FIO data...
+        </span>
         {% endif %}
     </div>
 
@@ -181,11 +185,13 @@ document.body.addEventListener('htmx:afterRequest', function(evt) {
         htmx.trigger(document.body, 'fioRefresh');
     }
     // Also hide overlay when inventory/suggestions finish loading
-    if (evt.detail.pathInfo.requestPath.includes('/api/dashboard/')) {
+    const path = evt.detail.pathInfo.requestPath;
+    if (path === '/api/dashboard/inventory' || path === '/api/dashboard/suggestions') {
         document.querySelectorAll('.fio-data-container').forEach(el => {
             el.classList.remove('loading');
         });
-        // Update discord preview when inventory changes
+        // Update status bar and discord preview when inventory changes
+        htmx.trigger(document.body, 'fioLoaded');
         loadDiscordPreview();
     }
 });

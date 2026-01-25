@@ -67,10 +67,16 @@
                 </td>
                 <td><strong>{{ listing.material_ticker }}</strong></td>
                 <td class="qty-cell">
-                    {{ '{:,}'.format(listing.quantity) if listing.quantity else '—' }}
-                    {% if stock_status.get(listing.id) == 'out' %}
+                    {% if listing.available_quantity is not none %}
+                        {{ '{:,}'.format(listing.available_quantity) }}
+                    {% elif listing.quantity %}
+                        {{ '{:,}'.format(listing.quantity) }}
+                    {% else %}
+                        —
+                    {% endif %}
+                    {% if get_stock_status(listing) == 'out' %}
                         <span class="badge badge-out-of-stock">OUT OF STOCK</span>
-                    {% elif stock_status.get(listing.id) == 'low' %}
+                    {% elif get_stock_status(listing) == 'low' %}
                         <span class="badge badge-low-stock">LOW STOCK</span>
                     {% endif %}
                 </td>

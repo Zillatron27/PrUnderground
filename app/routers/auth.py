@@ -10,7 +10,7 @@ from slowapi.util import get_remote_address
 
 from ..database import get_db
 from ..models import User
-from ..fio_client import FIOClient, FIOAuthError
+from ..fio_client import FIOClient, FIOAuthError, FIOError
 from ..audit import log_audit, AuditAction
 from ..csrf import verify_csrf
 from ..template_utils import render_template
@@ -110,6 +110,10 @@ async def check_user(
         except FIOAuthError:
             # Stored key is no longer valid - need a new one
             pass
+        except Exception as e:
+            # Network error, timeout, or other issue - prompt for new key
+            logger.warning(f"FIO check failed for {fio_username}: {e}")
+            pass
         finally:
             await client.close()
 
@@ -158,6 +162,33 @@ async def connect_fio(
                 "title": "Connect with FIO",
                 "step": "api_key",
                 "error": str(e),
+                "fio_username": fio_username,
+            },
+            status_code=400,
+        )
+    except FIOError as e:
+        return render_template(
+            request,
+            "auth/login.html",
+            {
+                "request": request,
+                "title": "Connect with FIO",
+                "step": "api_key",
+                "error": f"FIO API error: {e}",
+                "fio_username": fio_username,
+            },
+            status_code=400,
+        )
+    except Exception as e:
+        logger.error(f"Unexpected error connecting to FIO for {fio_username}: {e}")
+        return render_template(
+            request,
+            "auth/login.html",
+            {
+                "request": request,
+                "title": "Connect with FIO",
+                "step": "api_key",
+                "error": "Could not connect to FIO. Please check your API key and try again.",
                 "fio_username": fio_username,
             },
             status_code=400,
@@ -284,6 +315,21 @@ async def refresh_api_key(
                 "current_user": user,
                 "masked_key": f"{fio_api_key[:8]}..." if len(fio_api_key) > 8 else "****",
                 "error": str(e),
+            },
+            status_code=400,
+        )
+    except Exception as e:
+        logger.error(f"Unexpected error refreshing API key for {user.fio_username}: {e}")
+        return render_template(
+            request,
+            "auth/account.html",
+            {
+                "request": request,
+                "title": "Account Settings",
+                "user": user,
+                "current_user": user,
+                "masked_key": f"{fio_api_key[:8]}..." if len(fio_api_key) > 8 else "****",
+                "error": "Could not connect to FIO. Please try again.",
             },
             status_code=400,
         )

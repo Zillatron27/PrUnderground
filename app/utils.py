@@ -24,3 +24,17 @@ def format_price(listing) -> str:
         return f"CX{exchange}{sign}{listing.price_value:.0f}%"
     else:
         return "Contact me"
+
+
+def get_stock_status(listing) -> Optional[str]:
+    """
+    Get stock status from listing's stored available_quantity.
+    Returns 'out', 'low', or None (ok/no data).
+    """
+    if listing.available_quantity is None:
+        return None
+    if listing.available_quantity == 0:
+        return "out"
+    if listing.available_quantity <= 10:
+        return "low"
+    return None

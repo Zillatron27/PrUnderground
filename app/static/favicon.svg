@@ -1,0 +1,11 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32">
+  <!-- Outer ring - yellow arc centred at 12 o'clock -->
+  <circle cx="16" cy="16" r="14" fill="none" stroke="#f0b830" stroke-width="1.5"
+          stroke-dasharray="22 66" transform="rotate(-135 16 16)"/>
+  <!-- Middle ring - yellow arc from 11 to 5 (180 degrees) -->
+  <circle cx="16" cy="16" r="10" fill="none" stroke="#f0b830" stroke-width="1.5"
+          stroke-dasharray="31 31" transform="rotate(-120 16 16)"/>
+  <!-- Inner ring - cyan arc centred at 6 o'clock -->
+  <circle cx="16" cy="16" r="6" fill="none" stroke="#40c8c8" stroke-width="1.5"
+          stroke-dasharray="9 28" transform="rotate(45 16 16)"/>
+</svg>

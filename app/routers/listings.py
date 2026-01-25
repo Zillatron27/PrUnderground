@@ -14,7 +14,6 @@ from ..audit import log_audit, AuditAction
 from ..csrf import verify_csrf
 from ..template_utils import templates, render_template
 from .auth import get_current_user, require_user
-from .profile import get_stock_status_for_listings
 
 router = APIRouter()
 
@@ -64,18 +63,6 @@ async def browse_listings(
         if l.storage_name or l.location
     ))
 
-    # Get stock status for all listings (grouped by user to minimize FIO calls)
-    stock_status = {}
-    users_with_listings = {}
-    for listing in listings:
-        if listing.user_id not in users_with_listings:
-            users_with_listings[listing.user_id] = {"user": listing.user, "listings": []}
-        users_with_listings[listing.user_id]["listings"].append(listing)
-
-    for user_data in users_with_listings.values():
-        user_stock = await get_stock_status_for_listings(user_data["user"], user_data["listings"])
-        stock_status.update(user_stock)
-
     return templates.TemplateResponse(
         "listings/browse.html",
         {
@@ -86,7 +73,6 @@ async def browse_listings(
             "filter_material": material or "",
             "filter_location": location or "",
             "available_locations": available_locations,
-            "stock_status": stock_status,
         },
     )
 

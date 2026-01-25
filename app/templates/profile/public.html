@@ -25,7 +25,17 @@
 
     <section class="profile-listings">
         <h2>Listings ({{ listings|length }})</h2>
-
+        {% if profile_user.fio_last_synced or listings %}
+        <p class="fio-status-bar">
+            {% if profile_user.fio_last_synced %}
+            <span class="fio-refresh-status">FIO data updated: {{ get_sync_staleness(profile_user) }}</span>
+            {% endif %}
+            {% if profile_user.fio_last_synced and listings %} · {% endif %}
+            {% if listings %}
+            <span class="fio-refresh-status">Listings updated: {{ listings[0].updated_at.strftime('%d %b %Y') }}</span>
+            {% endif %}
+        </p>
+        {% endif %}
         {% if listings %}
         <div class="table-wrapper">
         <table class="listings-table">
@@ -45,10 +55,16 @@
                 <tr>
                     <td><strong>{{ listing.material_ticker }}</strong></td>
                     <td class="qty-cell">
-                        {{ '{:,}'.format(listing.quantity) if listing.quantity else '—' }}
-                        {% if stock_status.get(listing.id) == 'out' %}
+                        {% if listing.available_quantity is not none %}
+                            {{ '{:,}'.format(listing.available_quantity) }}
+                        {% elif listing.quantity %}
+                            {{ '{:,}'.format(listing.quantity) }}
+                        {% else %}
+                            —
+                        {% endif %}
+                        {% if get_stock_status(listing) == 'out' %}
                             <span class="badge badge-out-of-stock">OUT OF STOCK</span>
-                        {% elif stock_status.get(listing.id) == 'low' %}
+                        {% elif get_stock_status(listing) == 'low' %}
                             <span class="badge badge-low-stock">LOW STOCK</span>
                         {% endif %}
                     </td>

@@ -35,6 +35,7 @@ class User(Base):
     company_name = Column(String(100))
     discord_id = Column(String(50), unique=True, nullable=True)
     fio_api_key = Column(String(100), nullable=True)  # Encrypted in production
+    fio_last_synced = Column(DateTime, nullable=True)  # When FIO data was last pulled
     created_at = Column(DateTime, default=datetime.utcnow)
     updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
 
@@ -95,5 +96,6 @@ class Listing(Base):
     storage_id = Column(String(100), nullable=True)  # FIO AddressableId
     storage_name = Column(String(100), nullable=True)  # Human-readable name (cached)
     reserve_quantity = Column(Integer, nullable=True, default=0)  # Amount to keep in stock
+    available_quantity = Column(Integer, nullable=True)  # Computed: actual FIO stock - reserve
 
     user = relationship("User", back_populates="listings")

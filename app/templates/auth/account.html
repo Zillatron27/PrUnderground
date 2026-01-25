@@ -79,6 +79,40 @@
     </section>
 
     <section class="account-section">
+        <h2>Import / Export</h2>
+        <div class="data-management-grid">
+            <div class="data-card">
+                <h3>Export</h3>
+                <p>Download your data as a JSON file.</p>
+                <div class="data-actions">
+                    <a href="/data/export/backup" class="btn btn-secondary" download>Export Data</a>
+                </div>
+            </div>
+            <div class="data-card">
+                <h3>Import</h3>
+                <p>Restore data from a JSON backup file.</p>
+                <form id="import-form" enctype="multipart/form-data">
+                    <input type="hidden" name="{{ csrf_field_name }}" value="{{ csrf_token }}">
+                    <div class="form-group">
+                        <label for="import-file">Select file</label>
+                        <input type="file" id="import-file" name="file" accept=".json" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="import-mode">Import mode</label>
+                        <select id="import-mode" name="mode">
+                            <option value="merge_update">Merge (update existing + add new)</option>
+                            <option value="merge_add">Merge (add new only)</option>
+                            <option value="replace">Replace all</option>
+                        </select>
+                    </div>
+                    <button type="submit" class="btn btn-primary">Import</button>
+                </form>
+                <div id="import-result" class="import-result"></div>
+            </div>
+        </div>
+    </section>
+
+    <section class="account-section">
         <h2>Data Storage</h2>
         <p class="section-description">
             PrUnderground stores the following information:
@@ -99,4 +133,44 @@
         <a href="/auth/logout" class="btn btn-danger">Log Out</a>
     </div>
 </div>
+
+<script>
+document.getElementById('import-form').addEventListener('submit', async function(e) {
+    e.preventDefault();
+    const form = e.target;
+    const resultDiv = document.getElementById('import-result');
+    const submitBtn = form.querySelector('button[type="submit"]');
+
+    submitBtn.disabled = true;
+    submitBtn.textContent = 'Importing...';
+    resultDiv.innerHTML = '';
+    resultDiv.className = 'import-result';
+
+    const formData = new FormData(form);
+
+    try {
+        const response = await fetch('/data/import', {
+            method: 'POST',
+            body: formData,
+        });
+
+        const result = await response.json();
+
+        if (response.ok) {
+            resultDiv.className = 'import-result success';
+            resultDiv.innerHTML = `Import successful: ${result.added} added, ${result.updated} updated, ${result.skipped} skipped` +
+                (result.deleted > 0 ? `, ${result.deleted} deleted` : '');
+        } else {
+            resultDiv.className = 'import-result error';
+            resultDiv.innerHTML = `Import failed: ${result.detail || 'Unknown error'}`;
+        }
+    } catch (err) {
+        resultDiv.className = 'import-result error';
+        resultDiv.innerHTML = `Import failed: ${err.message}`;
+    } finally {
+        submitBtn.disabled = false;
+        submitBtn.textContent = 'Import';
+    }
+});
+</script>
 {% endblock %}

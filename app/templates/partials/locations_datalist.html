@@ -1,0 +1,3 @@
+{% for loc in locations %}
+<option value="{{ loc.name }}">{% if loc.natural_id %}{{ loc.natural_id }} - {% endif %}{{ loc.name }}{% if loc.system_name %} ({{ loc.system_name }}){% endif %}</option>
+{% endfor %}

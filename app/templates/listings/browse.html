@@ -4,6 +4,11 @@
 <div class="browse-page">
     <h1>Browse Listings</h1>
 
+    <div class="browse-tabs">
+        <a href="/listings" class="browse-tab active">Items</a>
+        <a href="/bundles" class="browse-tab">Bundles</a>
+    </div>
+
     <form class="filter-form" method="get" action="/listings">
         <div class="filter-row">
             <div class="filter-group">
@@ -43,17 +48,48 @@
     </form>
 
     {% if listings %}
+    <div class="sort-builder" id="sort-builder">
+        <span class="sort-label">Sort:</span>
+        <div class="sort-chips" id="sort-chips">
+            {% for col, dir in sort_spec %}
+            <span class="sort-chip" data-column="{{ col }}" data-direction="{{ dir }}">
+                {{ col | capitalize }}
+                <span class="sort-chip-dir">{% if dir == 'asc' %}▲{% else %}▼{% endif %}</span>
+                <button type="button" class="sort-chip-remove" aria-label="Remove {{ col }} sort">&times;</button>
+            </span>
+            {% endfor %}
+        </div>
+        {% if sort_spec != [('updated', 'desc')] %}
+        <button type="button" class="sort-clear" id="sort-clear">Clear</button>
+        {% endif %}
+    </div>
+
     <div class="table-wrapper">
-    <table class="listings-table">
+    <table class="listings-table" id="listings-table">
         <thead>
             <tr>
                 <th>Seller</th>
-                <th>Material</th>
-                <th>Quantity</th>
-                <th>Price</th>
-                <th>Location</th>
+                <th class="sortable" data-column="material">
+                    Material
+                    {% for col, dir in sort_spec %}{% if col == 'material' %}<span class="sort-indicator">{% if dir == 'asc' %}▲{% else %}▼{% endif %}</span>{% endif %}{% endfor %}
+                </th>
+                <th class="sortable" data-column="quantity">
+                    Quantity
+                    {% for col, dir in sort_spec %}{% if col == 'quantity' %}<span class="sort-indicator">{% if dir == 'asc' %}▲{% else %}▼{% endif %}</span>{% endif %}{% endfor %}
+                </th>
+                <th class="sortable" data-column="price">
+                    Price
+                    {% for col, dir in sort_spec %}{% if col == 'price' %}<span class="sort-indicator">{% if dir == 'asc' %}▲{% else %}▼{% endif %}</span>{% endif %}{% endfor %}
+                </th>
+                <th class="sortable" data-column="location">
+                    Location
+                    {% for col, dir in sort_spec %}{% if col == 'location' %}<span class="sort-indicator">{% if dir == 'asc' %}▲{% else %}▼{% endif %}</span>{% endif %}{% endfor %}
+                </th>
                 <th>Notes</th>
-                <th>Updated</th>
+                <th class="sortable" data-column="updated">
+                    Updated
+                    {% for col, dir in sort_spec %}{% if col == 'updated' %}<span class="sort-indicator">{% if dir == 'asc' %}▲{% else %}▼{% endif %}</span>{% endif %}{% endfor %}
+                </th>
             </tr>
         </thead>
         <tbody>
@@ -95,4 +131,92 @@
     </div>
     {% endif %}
 </div>
+
+<script>
+(function() {
+    // Parse current sort state from template data
+    let currentSort = {{ sort_spec | tojson }};
+
+    function navigateWithSort(sortArray) {
+        const url = new URL(window.location.href);
+        const sortParam = sortArray.map(([col, dir]) => `${col}:${dir}`).join(',');
+
+        // Handle default sort (updated:desc) - don't include in URL
+        if (sortParam === 'updated:desc' || sortArray.length === 0) {
+            url.searchParams.delete('sort');
+        } else {
+            url.searchParams.set('sort', sortParam);
+        }
+
+        window.location.href = url.toString();
+    }
+
+    // Click on column header: add to sort chain, or toggle if already in chain
+    document.querySelectorAll('.sortable').forEach(th => {
+        th.addEventListener('click', (e) => {
+            const column = th.dataset.column;
+            const existingIdx = currentSort.findIndex(([col]) => col === column);
+
+            let newSort;
+            if (existingIdx !== -1) {
+                // Column already in sort - toggle direction
+                const [, currentDir] = currentSort[existingIdx];
+                const newDir = currentDir === 'asc' ? 'desc' : 'asc';
+                newSort = currentSort.map(([col, dir], idx) =>
+                    idx === existingIdx ? [col, newDir] : [col, dir]
+                );
+            } else {
+                // New column - add to end of sort chain
+                newSort = [...currentSort, [column, 'asc']];
+            }
+
+            navigateWithSort(newSort);
+        });
+    });
+
+    // Click on chip direction: toggle asc/desc
+    document.querySelectorAll('.sort-chip').forEach(chip => {
+        chip.addEventListener('click', (e) => {
+            // Don't trigger if clicking the remove button
+            if (e.target.classList.contains('sort-chip-remove')) return;
+
+            const column = chip.dataset.column;
+            const currentDir = chip.dataset.direction;
+            const newDir = currentDir === 'asc' ? 'desc' : 'asc';
+
+            const newSort = currentSort.map(([col, dir]) =>
+                col === column ? [col, newDir] : [col, dir]
+            );
+
+            navigateWithSort(newSort);
+        });
+    });
+
+    // Click on chip remove button: remove from sort
+    document.querySelectorAll('.sort-chip-remove').forEach(btn => {
+        btn.addEventListener('click', (e) => {
+            e.stopPropagation();
+            const chip = btn.closest('.sort-chip');
+            const column = chip.dataset.column;
+
+            const newSort = currentSort.filter(([col]) => col !== column);
+
+            // If removing all sorts, default back to updated:desc
+            if (newSort.length === 0) {
+                navigateWithSort([['updated', 'desc']]);
+            } else {
+                navigateWithSort(newSort);
+            }
+        });
+    });
+
+    // Clear all sorts
+    const clearBtn = document.getElementById('sort-clear');
+    if (clearBtn) {
+        clearBtn.addEventListener('click', () => {
+            navigateWithSort([['updated', 'desc']]);
+        });
+    }
+})();
+</script>
 {% endblock %}

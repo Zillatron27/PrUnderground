@@ -1,4 +1,3 @@
-import re
 from datetime import datetime
 from fastapi import APIRouter, Depends, HTTPException, Request, Form, Query
 from fastapi.responses import HTMLResponse, RedirectResponse
@@ -9,6 +8,8 @@ from ..database import get_db
 from ..models import User, Listing, PriceType, ListingType
 from ..fio_client import FIOClient, extract_active_production, extract_storage_locations
 from ..fio_cache import fio_cache
+from ..services.material_sync import get_all_materials_from_db, get_material_categories
+from ..services.planet_sync import get_all_locations_from_db, get_cx_station_names
 from ..utils import format_price, clean_str
 from ..services.fio_sync import get_sync_staleness
 from ..audit import log_audit, AuditAction
@@ -19,11 +20,44 @@ from .auth import get_current_user, require_user
 router = APIRouter()
 
 
+# Valid sortable columns and their SQLAlchemy column references
+SORTABLE_COLUMNS = {
+    "material": Listing.material_ticker,
+    "quantity": Listing.available_quantity,
+    "price": Listing.price_value,
+    "location": Listing.storage_name,
+    "updated": Listing.updated_at,
+}
+
+
+def parse_sort_param(sort_param: Optional[str]) -> list[tuple[str, str]]:
+    """Parse sort parameter like 'material:asc,location:desc' into list of tuples."""
+    if not sort_param:
+        return [("updated", "desc")]
+
+    result = []
+    for part in sort_param.split(","):
+        part = part.strip()
+        if ":" in part:
+            col, direction = part.split(":", 1)
+            col = col.strip().lower()
+            direction = direction.strip().lower()
+            if col in SORTABLE_COLUMNS and direction in ("asc", "desc"):
+                result.append((col, direction))
+        else:
+            col = part.strip().lower()
+            if col in SORTABLE_COLUMNS:
+                result.append((col, "asc"))
+
+    return result if result else [("updated", "desc")]
+
+
 @router.get("/", response_class=HTMLResponse)
 async def browse_listings(
     request: Request,
     material: Optional[str] = Query(None),
     location: Optional[str] = Query(None),
+    sort: Optional[str] = Query(None),
     db: Session = Depends(get_db),
 ):
     """Browse all listings, optionally filtered. Materials datalist loaded via HTMX."""
@@ -50,7 +84,31 @@ async def browse_listings(
             (Listing.location.ilike(f"%{location}%"))
         )
 
-    listings = query.order_by(Listing.updated_at.desc()).all()
+    # Parse and apply multi-column sorting
+    sort_spec = parse_sort_param(sort)
+    for col_name, direction in sort_spec:
+        column = SORTABLE_COLUMNS[col_name]
+        if col_name == "price":
+            # Special handling: contact_me (NULL price_value) sorts last
+            from sqlalchemy import case
+            # For ascending: NULLs last (high value), for descending: NULLs last (low value)
+            if direction == "asc":
+                query = query.order_by(
+                    case((Listing.price_type == PriceType.CONTACT_ME, 1), else_=0),
+                    column.asc()
+                )
+            else:
+                query = query.order_by(
+                    case((Listing.price_type == PriceType.CONTACT_ME, 1), else_=0),
+                    column.desc()
+                )
+        else:
+            if direction == "asc":
+                query = query.order_by(column.asc())
+            else:
+                query = query.order_by(column.desc())
+
+    listings = query.all()
     current_user = get_current_user(request, db)
 
     # Get unique locations from active listings (from DB, no FIO call)
@@ -74,37 +132,38 @@ async def browse_listings(
             "filter_material": material or "",
             "filter_location": location or "",
             "available_locations": available_locations,
+            "sort_spec": sort_spec,
+            "sort_param": sort or "",
         },
     )
 
 
 @router.get("/api/materials", response_class=HTMLResponse)
-async def get_materials_datalist(request: Request):
-    """HTMX endpoint: Get all materials for datalist (cached)."""
-    def format_name(name: str) -> str:
-        spaced = re.sub(r'([a-z])([A-Z])', r'\1 \2', name)
-        return spaced.title()
-
-    # Check cache first
-    all_materials = fio_cache.get_all_materials()
-
-    if all_materials is None:
-        # Fetch from FIO
-        try:
-            client = FIOClient()
-            raw_materials = await client.get_all_materials()
-            all_materials = sorted(
-                [{"ticker": m["Ticker"], "name": format_name(m["Name"])} for m in raw_materials],
-                key=lambda x: x["ticker"]
-            )
-            fio_cache.set_all_materials(all_materials)
-            await client.close()
-        except Exception:
-            all_materials = []
+async def get_materials_datalist(
+    request: Request,
+    category: Optional[str] = Query(None),
+    db: Session = Depends(get_db),
+):
+    """HTMX endpoint: Get all materials for datalist from database."""
+    all_materials = get_all_materials_from_db(db, category=category)
 
     return templates.TemplateResponse(
         "partials/materials_datalist.html",
         {"request": request, "all_materials": all_materials},
+    )
+
+
+@router.get("/api/locations", response_class=HTMLResponse)
+async def get_locations_datalist(
+    request: Request,
+    db: Session = Depends(get_db),
+):
+    """HTMX endpoint: Get all locations for datalist from database."""
+    locations = get_all_locations_from_db(db)
+
+    return templates.TemplateResponse(
+        "partials/locations_datalist.html",
+        {"request": request, "locations": locations},
     )
 
 
@@ -179,7 +238,10 @@ async def get_storages_select(
                 raw_storages = await client.get_user_storage(user.fio_username)
                 sites = await client.get_user_sites(user.fio_username)
                 warehouses = await client.get_user_warehouses(user.fio_username)
-                all_storages = extract_storage_locations(raw_storages, sites, warehouses)
+                cx_names = get_cx_station_names(db)
+                all_storages = extract_storage_locations(
+                    raw_storages, sites, warehouses, cx_names
+                )
                 fio_cache.set_storage_locations(user.fio_username, all_storages)
                 storages = [s for s in all_storages if s["type"] in ("WAREHOUSE_STORE", "STORE")]
                 await client.close()

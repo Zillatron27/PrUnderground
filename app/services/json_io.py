@@ -120,6 +120,7 @@ def _listing_to_dict(listing: Listing) -> dict:
         "price_type": listing.price_type.value,
         "price_value": listing.price_value,
         "price_exchange": listing.price_exchange,
+        "price_cx_is_absolute": listing.price_cx_is_absolute or False,
         "location": listing.location,
         "storage_id": listing.storage_id,
         "storage_name": listing.storage_name,
@@ -377,6 +378,7 @@ def _dict_to_listing(data: dict, user_id: int) -> Optional[Listing]:
         price_type=price_type,
         price_value=data.get("price_value"),
         price_exchange=data.get("price_exchange"),
+        price_cx_is_absolute=data.get("price_cx_is_absolute", False),
         location=data.get("location"),
         storage_id=data.get("storage_id"),
         storage_name=data.get("storage_name"),
@@ -505,6 +507,9 @@ def _update_listing_from_dict(listing: Listing, data: dict) -> None:
 
     if "price_exchange" in data:
         listing.price_exchange = data["price_exchange"]
+
+    if "price_cx_is_absolute" in data:
+        listing.price_cx_is_absolute = data["price_cx_is_absolute"]
 
     if "location" in data:
         listing.location = data["location"]

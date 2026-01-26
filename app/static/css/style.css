@@ -293,6 +293,20 @@ body.loading #global-spinner::after {
 /* ========================================
    Tables
    ======================================== */
+
+/* Zebra striping for all tables */
+table tbody tr:nth-child(even) {
+    background: var(--bg-tertiary);
+}
+
+table tbody tr:nth-child(odd) {
+    background: transparent;
+}
+
+table tbody tr:hover {
+    background: var(--bg-highlight);
+}
+
 .listings-table {
     width: 100%;
     border-collapse: collapse;
@@ -314,6 +328,15 @@ body.loading #global-spinner::after {
     padding: var(--space-sm) var(--space-sm);
     border-bottom: 1px solid var(--border-subtle);
     color: var(--text-primary);
+}
+
+/* Zebra striping for listings table */
+.listings-table tbody tr:nth-child(even) {
+    background: var(--bg-tertiary);
+}
+
+.listings-table tbody tr:nth-child(odd) {
+    background: transparent;
 }
 
 .listings-table tbody tr:hover {
@@ -1114,6 +1137,27 @@ body.loading #global-spinner::after {
 .radio-option input[type="radio"] {
     width: auto;
     accent-color: var(--accent-cyan);
+}
+
+/* Tooltip icon for help hints */
+.tooltip-icon {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 16px;
+    height: 16px;
+    margin-left: var(--space-xs);
+    background: var(--bg-tertiary);
+    border: 1px solid var(--border-medium);
+    border-radius: 50%;
+    font-size: var(--text-xs);
+    color: var(--text-secondary);
+    cursor: help;
+}
+
+.tooltip-icon:hover {
+    background: var(--bg-highlight);
+    color: var(--accent-cyan);
 }
 
 /* ========================================
@@ -2231,6 +2275,19 @@ body.loading #global-spinner::after {
     text-transform: uppercase;
     letter-spacing: 0.05em;
     color: var(--text-tertiary);
+}
+
+/* Zebra striping for bundle items table */
+.bundle-items-table tbody tr:nth-child(even) {
+    background: var(--bg-tertiary);
+}
+
+.bundle-items-table tbody tr:nth-child(odd) {
+    background: transparent;
+}
+
+.bundle-items-table tbody tr:hover {
+    background: var(--bg-highlight);
 }
 
 .bundle-notes {

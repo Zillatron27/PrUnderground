@@ -22,7 +22,10 @@ def format_price(listing) -> str:
             return "CX price"
         sign = "+" if listing.price_value >= 0 else ""
         exchange = f".{listing.price_exchange}" if listing.price_exchange else ""
-        return f"CX{exchange}{sign}{listing.price_value:.0f}%"
+        if getattr(listing, 'price_cx_is_absolute', False):
+            return f"CX{exchange}{sign}{listing.price_value:,.0f}"
+        else:
+            return f"CX{exchange}{sign}{listing.price_value:.0f}%"
     else:
         return "Contact me"
 

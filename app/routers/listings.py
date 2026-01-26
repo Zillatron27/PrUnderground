@@ -263,6 +263,7 @@ async def create_listing(
     price_value_absolute: Optional[float] = Form(None),
     price_value_cx: Optional[float] = Form(None),
     price_exchange: Optional[str] = Form(None),
+    cx_offset_type: Optional[str] = Form("percent"),
     location: Optional[str] = Form(None),
     listing_type: str = Form("standing"),
     notes: Optional[str] = Form(None),
@@ -302,6 +303,7 @@ async def create_listing(
         price_type=PriceType(price_type),
         price_value=price_value,
         price_exchange=price_exchange.upper() if price_exchange else None,
+        price_cx_is_absolute=(cx_offset_type == "absolute"),
         location=clean_str(location),
         listing_type=ListingType(listing_type),
         notes=clean_str(notes),
@@ -364,6 +366,7 @@ async def update_listing(
     price_value_absolute: Optional[float] = Form(None),
     price_value_cx: Optional[float] = Form(None),
     price_exchange: Optional[str] = Form(None),
+    cx_offset_type: Optional[str] = Form("percent"),
     location: Optional[str] = Form(None),
     listing_type: str = Form("standing"),
     notes: Optional[str] = Form(None),
@@ -407,6 +410,7 @@ async def update_listing(
     listing.price_type = PriceType(price_type)
     listing.price_value = price_value
     listing.price_exchange = price_exchange.upper() if price_exchange else None
+    listing.price_cx_is_absolute = (cx_offset_type == "absolute")
     listing.location = clean_str(location)
     listing.listing_type = ListingType(listing_type)
     listing.notes = clean_str(notes)

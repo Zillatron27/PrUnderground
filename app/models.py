@@ -1,5 +1,6 @@
 from datetime import datetime
 from sqlalchemy import (
+    Boolean,
     Column,
     Integer,
     String,
@@ -84,8 +85,9 @@ class Listing(Base):
     material_ticker = Column(String(10), nullable=False, index=True)
     quantity = Column(Integer, nullable=True)  # None = standing offer, no specific qty
     price_type = Column(SQLEnum(PriceType), nullable=False, default=PriceType.CONTACT_ME)
-    price_value = Column(Float, nullable=True)  # Absolute price or CX offset percentage
+    price_value = Column(Float, nullable=True)  # Absolute price or CX offset percentage/amount
     price_exchange = Column(String(10), nullable=True)  # e.g., "NC1" for CX-relative
+    price_cx_is_absolute = Column(Boolean, default=False)  # True = absolute offset, False = percentage
     location = Column(String(50), nullable=True)  # Planet or station
     listing_type = Column(SQLEnum(ListingType), nullable=False, default=ListingType.STANDING)
     notes = Column(Text, nullable=True)

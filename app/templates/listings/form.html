@@ -37,6 +37,7 @@
                            {% if listing and listing.price_type.value == 'cx_relative' %}checked{% endif %}
                            onchange="togglePriceFields()">
                     <span>CX Relative</span>
+                    <span class="tooltip-icon" title="Price relative to Commodity Exchange Ask price. Example: 'CX.NC1-10%' means 10% below NC1 Ask price. Use absolute mode for fixed offsets like 'CX-50' (50 credits below Ask).">?</span>
                 </label>
                 <label class="radio-option">
                     <input type="radio" name="price_type" value="contact_me"
@@ -58,10 +59,28 @@
 
         <div class="form-row price-fields" id="price-cx-fields" style="display:none">
             <div class="form-group">
-                <label for="price_value_cx">CX Offset (%)</label>
-                <input type="number" id="price_value_cx" name="price_value_cx" step="1"
-                       value="{{ listing.price_value if listing and listing.price_type.value == 'cx_relative' and listing.price_value else '' }}"
-                       placeholder="e.g., -10 for 10% below CX">
+                <label>Offset Type</label>
+                <div class="price-options">
+                    <label class="radio-option">
+                        <input type="radio" name="cx_offset_type" value="percent"
+                               {% if not listing or not listing.price_cx_is_absolute %}checked{% endif %}
+                               onchange="updateCxOffsetHelp()">
+                        <span>Percentage</span>
+                    </label>
+                    <label class="radio-option">
+                        <input type="radio" name="cx_offset_type" value="absolute"
+                               {% if listing and listing.price_cx_is_absolute %}checked{% endif %}
+                               onchange="updateCxOffsetHelp()">
+                        <span>Absolute</span>
+                    </label>
+                </div>
+            </div>
+            <div class="form-group">
+                <label for="price_value_cx">CX Offset</label>
+                <input type="number" id="price_value_cx" name="price_value_cx" step="0.01"
+                       value="{{ listing.price_value if listing and listing.price_type.value == 'cx_relative' and listing.price_value is not none else '' }}"
+                       placeholder="e.g., -10">
+                <p class="help-text price-preview" id="cx-offset-help">Negative = below CX, Positive = above CX</p>
             </div>
             <div class="form-group">
                 <label for="price_exchange">Exchange</label>
@@ -159,6 +178,24 @@ function togglePriceFields() {
         priceType === 'absolute' ? 'flex' : 'none';
     document.getElementById('price-cx-fields').style.display =
         priceType === 'cx_relative' ? 'flex' : 'none';
+    if (priceType === 'cx_relative') {
+        updateCxOffsetHelp();
+    }
+}
+
+function updateCxOffsetHelp() {
+    const offsetType = document.querySelector('input[name="cx_offset_type"]:checked').value;
+    const helpText = document.getElementById('cx-offset-help');
+    const input = document.getElementById('price_value_cx');
+    if (offsetType === 'absolute') {
+        helpText.textContent = 'Fixed amount offset (e.g., -50 = 50 credits below CX Ask)';
+        input.placeholder = 'e.g., -50';
+        input.step = '0.01';
+    } else {
+        helpText.textContent = 'Percentage offset (e.g., -10 = 10% below CX Ask)';
+        input.placeholder = 'e.g., -10';
+        input.step = '1';
+    }
 }
 
 function toggleExpiryField() {
@@ -204,6 +241,7 @@ function updateLocationFromStorage() {
 document.addEventListener('DOMContentLoaded', function() {
     togglePriceFields();
     toggleExpiryField();
+    updateCxOffsetHelp();
 });
 
 // Show loading state for storage select

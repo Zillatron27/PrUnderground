@@ -50,6 +50,10 @@ class FIOClient:
         """Get all building types."""
         return await self._get("/building/allbuildings") or []
 
+    async def get_all_planets(self) -> list[dict]:
+        """Get all planets in the game."""
+        return await self._get("/planet/allplanets") or []
+
     async def get_building_recipes(self) -> list[dict]:
         """Get all building recipes (what each building can produce)."""
         return await self._get("/rain/buildingrecipes") or []
@@ -163,12 +167,11 @@ def extract_active_production(production_lines: list[dict]) -> set[str]:
     return materials
 
 
-# Known CX station names for sorting
-CX_STATIONS = {"Moria Station", "Benten Station", "Hortus Station", "Arclight Station", "Antares Station"}
-
-
 def extract_storage_locations(
-    storages: list[dict], sites: list[dict], warehouses: list[dict] = None
+    storages: list[dict],
+    sites: list[dict],
+    warehouses: list[dict] = None,
+    cx_station_names: set[str] = None,
 ) -> list[dict]:
     """
     Extract storage locations with human-readable names.
@@ -177,6 +180,7 @@ def extract_storage_locations(
         storages: Raw storage data from /storage/{username}
         sites: Site data from /sites/{username} - maps SiteId to planet
         warehouses: Warehouse data from /sites/warehouses/{username} - maps StoreId to location
+        cx_station_names: Set of CX station names from database (e.g., {"Moria Station", ...})
 
     Returns list of dicts with:
     - addressable_id: The FIO storage identifier
@@ -188,6 +192,7 @@ def extract_storage_locations(
     Results are sorted: CX stations first (alphabetically), then planets (alphabetically)
     """
     warehouses = warehouses or []
+    cx_station_names = cx_station_names or set()
 
     # Build a map of SiteId -> PlanetName from sites (for base STORE types)
     site_to_planet = {}
@@ -232,7 +237,7 @@ def extract_storage_locations(
             name = addressable_id[:12] if addressable_id else "Unknown"
 
         # Check if this is a CX station
-        is_cx = name in CX_STATIONS
+        is_cx = name in cx_station_names
 
         # Extract items
         items = {}

@@ -11,6 +11,7 @@ from sqlalchemy.orm import Session
 
 from ..models import User, Listing
 from ..fio_client import FIOClient, extract_storage_locations
+from .planet_sync import get_cx_station_names
 
 logger = logging.getLogger(__name__)
 
@@ -50,8 +51,13 @@ async def sync_user_fio_data(user: User, db: Session, force: bool = False) -> bo
         sites = await client.get_user_sites(user.fio_username)
         warehouses = await client.get_user_warehouses(user.fio_username)
 
+        # Get CX station names from database for is_cx identification
+        cx_station_names = get_cx_station_names(db)
+
         # Process into storage locations with inventory
-        storage_locations = extract_storage_locations(raw_storages, sites, warehouses)
+        storage_locations = extract_storage_locations(
+            raw_storages, sites, warehouses, cx_station_names
+        )
 
         # Build inventory map: storage_id -> {material_ticker -> amount}
         storage_inventory = {}

@@ -14,8 +14,8 @@ from slowapi.util import get_remote_address
 from slowapi.errors import RateLimitExceeded
 
 from .database import engine, Base, get_db
-from .models import User, Listing
-from .routers import auth, listings, profile, data
+from .models import User, Listing, Bundle
+from .routers import auth, listings, profile, data, bundles
 from .routers.auth import get_current_user, require_user
 from .fio_client import FIOClient, extract_active_production
 from .fio_cache import fio_cache
@@ -23,6 +23,8 @@ from .utils import format_price
 from .audit import AuditLog, log_audit, AuditAction  # Import to register model
 from .template_utils import templates, render_template
 from .services.fio_sync import sync_user_fio_data, get_sync_staleness
+from .services.material_sync import sync_materials, is_material_sync_needed
+from .services.planet_sync import sync_planets, is_planet_sync_needed
 
 # App version - single source of truth
 __version__ = "1.0.1"
@@ -43,7 +45,24 @@ limiter = Limiter(key_func=get_remote_address)
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    # Startup
+    # Startup: sync materials and planets if needed
+    from .database import SessionLocal
+    db = SessionLocal()
+    try:
+        if is_material_sync_needed(db):
+            logger.info("Materials table empty or stale, syncing from FIO...")
+            inserted, updated = await sync_materials(db, force=True)
+            logger.info(f"Material sync complete: {inserted} new, {updated} updated")
+
+        if is_planet_sync_needed(db):
+            logger.info("Planets table empty or stale, syncing from FIO...")
+            inserted, updated = await sync_planets(db, force=True)
+            logger.info(f"Planet sync complete: {inserted} new, {updated} updated")
+    except Exception as e:
+        logger.error(f"Startup sync failed: {e}")
+    finally:
+        db.close()
+
     yield
     # Shutdown
 
@@ -79,6 +98,7 @@ app.mount("/static", StaticFiles(directory="app/static"), name="static")
 # Include routers
 app.include_router(auth.router, prefix="/auth", tags=["auth"])
 app.include_router(listings.router, prefix="/listings", tags=["listings"])
+app.include_router(bundles.router, prefix="/bundles", tags=["bundles"])
 app.include_router(profile.router, prefix="/u", tags=["profile"])
 app.include_router(data.router)
 
@@ -116,6 +136,14 @@ async def dashboard(request: Request, db: Session = Depends(get_db)):
         .all()
     )
 
+    # Get user's bundles from DB
+    user_bundles = (
+        db.query(Bundle)
+        .filter(Bundle.user_id == user.id)
+        .order_by(Bundle.updated_at.desc())
+        .all()
+    )
+
     return render_template(
         request,
         "dashboard.html",
@@ -124,6 +152,7 @@ async def dashboard(request: Request, db: Session = Depends(get_db)):
             "title": "Dashboard",
             "current_user": user,
             "listings": user_listings,
+            "bundles": user_bundles,
             "format_price": format_price,
             "now": datetime.utcnow(),
         },

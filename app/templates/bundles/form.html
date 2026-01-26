@@ -1,0 +1,289 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="form-page">
+    <h1>{% if bundle %}Edit{% else %}Create{% endif %} Bundle</h1>
+
+    <form method="post" action="{% if bundle %}/bundles/{{ bundle.id }}/edit{% else %}/bundles/new{% endif %}" class="listing-form" onsubmit="return validateBundleForm()">
+        <input type="hidden" name="{{ csrf_field_name }}" value="{{ csrf_token }}">
+
+        <div class="form-group">
+            <label for="name">Bundle Name <span class="required">*</span></label>
+            <input type="text" id="name" name="name"
+                   value="{{ bundle.name if bundle else '' }}"
+                   required maxlength="100" placeholder="e.g., 5k5k HCB Ship Kit">
+        </div>
+
+        <div class="form-group">
+            <label for="description">Description (optional)</label>
+            <textarea id="description" name="description" rows="2"
+                      placeholder="Specs, details, etc.">{{ bundle.description if bundle else '' }}</textarea>
+        </div>
+
+        <div class="form-group">
+            <label>Bundle Items <span class="required">*</span></label>
+            <p class="help-text">Add materials included in this bundle (at least one required)</p>
+            <p class="help-text error-text" id="items-error" style="display: none;">Please add at least one item to the bundle</p>
+        </div>
+
+        <div id="bundle-items-container">
+            {% if bundle and bundle.items %}
+                {% for item in bundle.items %}
+                <div class="bundle-item-row" data-index="{{ loop.index0 }}">
+                    <div class="form-row">
+                        <div class="form-group">
+                            <input type="text" name="item_ticker_{{ loop.index0 }}"
+                                   value="{{ item.material_ticker }}"
+                                   required maxlength="10" placeholder="Material"
+                                   list="material-list">
+                        </div>
+                        <div class="form-group">
+                            <input type="number" name="item_qty_{{ loop.index0 }}"
+                                   value="{{ item.quantity }}"
+                                   min="1" required placeholder="Qty">
+                        </div>
+                        <div class="form-group">
+                            <button type="button" class="btn btn-sm btn-danger" onclick="removeItemRow(this)">Remove</button>
+                        </div>
+                    </div>
+                </div>
+                {% endfor %}
+            {% else %}
+                <div class="bundle-item-row" data-index="0">
+                    <div class="form-row">
+                        <div class="form-group">
+                            <input type="text" name="item_ticker_0"
+                                   required maxlength="10" placeholder="Material"
+                                   list="material-list">
+                        </div>
+                        <div class="form-group">
+                            <input type="number" name="item_qty_0"
+                                   min="1" value="1" required placeholder="Qty">
+                        </div>
+                        <div class="form-group">
+                            <button type="button" class="btn btn-sm btn-danger" onclick="removeItemRow(this)">Remove</button>
+                        </div>
+                    </div>
+                </div>
+            {% endif %}
+        </div>
+        <datalist id="material-list" hx-get="/listings/api/materials" hx-trigger="load" hx-swap="innerHTML">
+        </datalist>
+
+        <button type="button" class="btn btn-secondary" onclick="addItemRow()" id="add-item-btn">+ Add Item</button>
+
+        <hr class="form-divider">
+
+        <div class="form-row">
+            <div class="form-group">
+                <label for="quantity">Quantity Available</label>
+                <input type="number" id="quantity" name="quantity" min="1"
+                       value="{{ bundle.quantity if bundle and bundle.quantity else '' }}"
+                       placeholder="Leave blank for unlimited">
+            </div>
+            <div class="form-group">
+                <label for="location">Pickup Location</label>
+                <input type="text" id="location" name="location" maxlength="50"
+                       value="{{ bundle.location if bundle else '' }}"
+                       placeholder="e.g., Moria Station"
+                       list="location-list">
+                <datalist id="location-list" hx-get="/bundles/api/locations" hx-trigger="load" hx-swap="innerHTML">
+                </datalist>
+                <p class="help-text price-preview">Start typing to search</p>
+            </div>
+        </div>
+
+        <div class="form-group">
+            <label>Pricing</label>
+            <div class="price-options">
+                <label class="radio-option">
+                    <input type="radio" name="price_mode" value="fixed"
+                           {% if not bundle or bundle.price %}checked{% endif %}
+                           onchange="toggleBundlePriceFields()">
+                    <span>Fixed Price</span>
+                </label>
+                <label class="radio-option">
+                    <input type="radio" name="price_mode" value="contact"
+                           {% if bundle and not bundle.price %}checked{% endif %}
+                           onchange="toggleBundlePriceFields()">
+                    <span>Contact Me</span>
+                </label>
+            </div>
+        </div>
+
+        <div class="form-row" id="bundle-price-fields">
+            <div class="form-group">
+                <label for="price">Total Bundle Price</label>
+                <input type="number" id="price" name="price" step="0.01" min="0"
+                       value="{{ bundle.price if bundle and bundle.price else '' }}"
+                       placeholder="e.g., 11000000"
+                       oninput="updatePricePreview()">
+                <p class="help-text price-preview" id="price-preview"></p>
+            </div>
+            <div class="form-group">
+                <label for="currency">Currency</label>
+                <select id="currency" name="currency" onchange="updatePricePreview()">
+                    {% for curr in currencies %}
+                    <option value="{{ curr }}" {% if bundle and bundle.currency == curr %}selected{% endif %}>
+                        {{ curr }}
+                    </option>
+                    {% endfor %}
+                </select>
+            </div>
+        </div>
+        <input type="hidden" name="contact_me" id="contact_me" value="">
+
+        <div class="form-row">
+            <div class="form-group">
+                <label for="listing_type">Listing Type</label>
+                <select id="listing_type" name="listing_type" onchange="toggleExpiryField()">
+                    <option value="standing" {% if not bundle or bundle.listing_type.value == 'standing' %}selected{% endif %}>
+                        Standing Offer
+                    </option>
+                    <option value="special" {% if bundle and bundle.listing_type.value == 'special' %}selected{% endif %}>
+                        Special/Deal
+                    </option>
+                </select>
+            </div>
+            <div class="form-group" id="expiry-field" style="display:none">
+                <label for="expires_at">Expires (optional)</label>
+                <input type="date" id="expires_at" name="expires_at"
+                       value="{{ bundle.expires_at.strftime('%Y-%m-%d') if bundle and bundle.expires_at else '' }}">
+                <p class="help-text">Leave empty for no expiry</p>
+            </div>
+        </div>
+
+        <div class="form-group">
+            <label for="notes">Notes (optional)</label>
+            <textarea id="notes" name="notes" rows="3"
+                      placeholder="Any additional info (bulk discounts, availability, etc.)">{{ bundle.notes if bundle else '' }}</textarea>
+        </div>
+
+        <div class="form-actions">
+            <button type="submit" class="btn btn-primary">
+                {% if bundle %}Update{% else %}Create{% endif %} Bundle
+            </button>
+            <a href="/dashboard" class="btn btn-secondary">Cancel</a>
+            {% if bundle %}
+            <button type="button" class="btn btn-danger" onclick="deleteBundle()">Delete</button>
+            {% endif %}
+        </div>
+    </form>
+
+    {% if bundle %}
+    <form id="delete-form" method="post" action="/bundles/{{ bundle.id }}/delete" style="display: none;">
+        <input type="hidden" name="{{ csrf_field_name }}" value="{{ csrf_token }}">
+    </form>
+    {% endif %}
+</div>
+
+<script>
+let itemIndex = {{ bundle.items|length if bundle and bundle.items else 1 }};
+
+function addItemRow() {
+    const container = document.getElementById('bundle-items-container');
+    const row = document.createElement('div');
+    row.className = 'bundle-item-row';
+    row.dataset.index = itemIndex;
+    row.innerHTML = `
+        <div class="form-row">
+            <div class="form-group">
+                <input type="text" name="item_ticker_${itemIndex}"
+                       required maxlength="10" placeholder="Material"
+                       list="material-list">
+            </div>
+            <div class="form-group">
+                <input type="number" name="item_qty_${itemIndex}"
+                       min="1" value="1" required placeholder="Qty">
+            </div>
+            <div class="form-group">
+                <button type="button" class="btn btn-sm btn-danger" onclick="removeItemRow(this)">Remove</button>
+            </div>
+        </div>
+    `;
+    container.appendChild(row);
+    itemIndex++;
+}
+
+function removeItemRow(btn) {
+    btn.closest('.bundle-item-row').remove();
+}
+
+function toggleBundlePriceFields() {
+    const priceMode = document.querySelector('input[name="price_mode"]:checked').value;
+    const priceFields = document.getElementById('bundle-price-fields');
+    const contactMe = document.getElementById('contact_me');
+
+    if (priceMode === 'contact') {
+        priceFields.style.display = 'none';
+        contactMe.value = '1';
+    } else {
+        priceFields.style.display = 'flex';
+        contactMe.value = '';
+    }
+}
+
+function updatePricePreview() {
+    const priceInput = document.getElementById('price');
+    const currencySelect = document.getElementById('currency');
+    const preview = document.getElementById('price-preview');
+
+    const value = parseFloat(priceInput.value);
+    if (isNaN(value) || value === 0) {
+        preview.textContent = '';
+        return;
+    }
+
+    const currency = currencySelect.value || '';
+    const formatted = value.toLocaleString(undefined, {
+        minimumFractionDigits: 0,
+        maximumFractionDigits: 2
+    });
+    preview.textContent = `${formatted} ${currency}`;
+}
+
+function toggleExpiryField() {
+    const listingType = document.getElementById('listing_type').value;
+    document.getElementById('expiry-field').style.display =
+        listingType === 'special' ? 'block' : 'none';
+}
+
+function validateBundleForm() {
+    const container = document.getElementById('bundle-items-container');
+    const itemRows = container.querySelectorAll('.bundle-item-row');
+    const errorEl = document.getElementById('items-error');
+
+    // Check if there's at least one item with a ticker
+    let hasValidItem = false;
+    for (const row of itemRows) {
+        const tickerInput = row.querySelector('input[name^="item_ticker_"]');
+        if (tickerInput && tickerInput.value.trim()) {
+            hasValidItem = true;
+            break;
+        }
+    }
+
+    if (!hasValidItem) {
+        errorEl.style.display = 'block';
+        container.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        return false;
+    }
+
+    errorEl.style.display = 'none';
+    return true;
+}
+
+function deleteBundle() {
+    if (confirm('Are you sure you want to delete this bundle? This cannot be undone.')) {
+        document.getElementById('delete-form').submit();
+    }
+}
+
+// Initialize on load
+document.addEventListener('DOMContentLoaded', function() {
+    toggleBundlePriceFields();
+    toggleExpiryField();
+    updatePricePreview();
+});
+</script>
+{% endblock %}

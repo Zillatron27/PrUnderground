@@ -6,7 +6,7 @@ from sqlalchemy.orm import Session
 from sqlalchemy import or_
 
 from ..database import get_db
-from ..models import User, Listing
+from ..models import User, Listing, Bundle
 from ..utils import format_price, get_stock_status
 from ..services.fio_sync import get_sync_staleness
 from .auth import get_current_user
@@ -37,6 +37,13 @@ async def public_profile(
         .order_by(Listing.updated_at.desc())
         .all()
     )
+    bundles = (
+        db.query(Bundle)
+        .filter(Bundle.user_id == user.id)
+        .filter(or_(Bundle.expires_at.is_(None), Bundle.expires_at > now))
+        .order_by(Bundle.updated_at.desc())
+        .all()
+    )
     current_user = get_current_user(request, db)
 
     return templates.TemplateResponse(
@@ -46,6 +53,7 @@ async def public_profile(
             "title": f"{user.fio_username}'s Listings",
             "profile_user": user,
             "listings": listings,
+            "bundles": bundles,
             "current_user": current_user,
             "format_price": format_price,
         },

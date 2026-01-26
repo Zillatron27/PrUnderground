@@ -13,7 +13,7 @@ from enum import Enum
 from typing import Optional
 from sqlalchemy.orm import Session
 
-from ..models import User, Listing, PriceType, ListingType
+from ..models import User, Listing, Bundle, BundleItem, PriceType, ListingType
 
 
 # Current schema version - increment when making breaking changes
@@ -69,11 +69,33 @@ def export_listings(user: User) -> dict:
     }
 
 
+def export_bundles(user: User) -> dict:
+    """Export user's bundles to JSON format."""
+    bundles_data = []
+    for bundle in user.bundles:
+        bundles_data.append(_bundle_to_dict(bundle))
+
+    return {
+        "type": "prunderground-bundles",
+        "version": SCHEMA_VERSION,
+        "exported_at": datetime.utcnow().isoformat() + "Z",
+        "user": {
+            "fio_username": user.fio_username,
+            "company_code": user.company_code,
+        },
+        "bundles": bundles_data,
+    }
+
+
 def export_backup(user: User) -> dict:
-    """Export full user backup (profile + listings) to JSON format."""
+    """Export full user backup (profile + listings + bundles) to JSON format."""
     listings_data = []
     for listing in user.listings:
         listings_data.append(_listing_to_dict(listing))
+
+    bundles_data = []
+    for bundle in user.bundles:
+        bundles_data.append(_bundle_to_dict(bundle))
 
     return {
         "type": "prunderground-backup",
@@ -86,6 +108,7 @@ def export_backup(user: User) -> dict:
             "discord_id": user.discord_id,
         },
         "listings": listings_data,
+        "bundles": bundles_data,
     }
 
 
@@ -104,6 +127,29 @@ def _listing_to_dict(listing: Listing) -> dict:
         "listing_type": listing.listing_type.value,
         "notes": listing.notes,
         "expires_at": listing.expires_at.isoformat() + "Z" if listing.expires_at else None,
+    }
+
+
+def _bundle_to_dict(bundle: Bundle) -> dict:
+    """Convert a Bundle model to a JSON-serializable dict."""
+    items = []
+    for item in bundle.items:
+        items.append({
+            "material_ticker": item.material_ticker,
+            "quantity": item.quantity,
+        })
+
+    return {
+        "name": bundle.name,
+        "description": bundle.description,
+        "quantity": bundle.quantity,
+        "price": bundle.price,
+        "currency": bundle.currency,
+        "location": bundle.location,
+        "listing_type": bundle.listing_type.value,
+        "notes": bundle.notes,
+        "expires_at": bundle.expires_at.isoformat() + "Z" if bundle.expires_at else None,
+        "items": items,
     }
 
 
@@ -133,6 +179,8 @@ def import_json(data: dict, user: User, db: Session, mode: ImportMode) -> Import
     match data_type:
         case "prunderground-listings":
             return _import_listings(data, user, db, mode)
+        case "prunderground-bundles":
+            return _import_bundles(data, user, db, mode)
         case "prunderground-backup":
             return _import_backup(data, user, db, mode)
         case _:
@@ -198,6 +246,60 @@ def _import_listings(data: dict, user: User, db: Session, mode: ImportMode) -> I
     return result
 
 
+def _import_bundles(data: dict, user: User, db: Session, mode: ImportMode) -> ImportResult:
+    """Import bundles from prunderground-bundles format."""
+    result = ImportResult()
+
+    # Validate structure
+    bundles_data = data.get("bundles")
+    if not isinstance(bundles_data, list):
+        result.success = False
+        result.error = "Missing or invalid 'bundles' array"
+        return result
+
+    # Validate version compatibility
+    version = data.get("version", "1.0")
+    if not _is_version_compatible(version):
+        result.success = False
+        result.error = f"Incompatible schema version: {version}"
+        return result
+
+    # Process based on mode
+    if mode == ImportMode.REPLACE:
+        # Delete all existing bundles
+        result.deleted = len(user.bundles)
+        for bundle in user.bundles[:]:
+            db.delete(bundle)
+        db.flush()
+
+    # Get existing bundles by name for merge modes
+    existing_by_name = {b.name: b for b in user.bundles}
+
+    for item in bundles_data:
+        name = item.get("name")
+        if not name:
+            result.skipped += 1
+            continue
+
+        if mode == ImportMode.MERGE_ADD and name in existing_by_name:
+            result.skipped += 1
+            continue
+
+        if mode == ImportMode.MERGE_UPDATE and name in existing_by_name:
+            _update_bundle_from_dict(existing_by_name[name], item, db)
+            result.updated += 1
+        else:
+            bundle = _dict_to_bundle(item, user.id, db)
+            if bundle:
+                db.add(bundle)
+                result.added += 1
+            else:
+                result.skipped += 1
+
+    db.commit()
+    return result
+
+
 def _import_backup(data: dict, user: User, db: Session, mode: ImportMode) -> ImportResult:
     """Import full backup from prunderground-backup format."""
     result = ImportResult()
@@ -222,13 +324,21 @@ def _import_backup(data: dict, user: User, db: Session, mode: ImportMode) -> Imp
     data_with_listings = {"listings": listings_data, "version": version}
     listings_result = _import_listings(data_with_listings, user, db, mode)
 
+    # Import bundles using the same logic
+    bundles_data = data.get("bundles", [])
+    data_with_bundles = {"bundles": bundles_data, "version": version}
+    bundles_result = _import_bundles(data_with_bundles, user, db, mode)
+
     # Combine results
-    result.added = listings_result.added
-    result.updated = listings_result.updated
-    result.skipped = listings_result.skipped
-    result.deleted = listings_result.deleted
-    result.success = listings_result.success
-    result.error = listings_result.error
+    result.added = listings_result.added + bundles_result.added
+    result.updated = listings_result.updated + bundles_result.updated
+    result.skipped = listings_result.skipped + bundles_result.skipped
+    result.deleted = listings_result.deleted + bundles_result.deleted
+    result.success = listings_result.success and bundles_result.success
+    if listings_result.error:
+        result.error = listings_result.error
+    elif bundles_result.error:
+        result.error = bundles_result.error
 
     return result
 
@@ -275,6 +385,108 @@ def _dict_to_listing(data: dict, user_id: int) -> Optional[Listing]:
         notes=data.get("notes"),
         expires_at=expires_at,
     )
+
+
+def _dict_to_bundle(data: dict, user_id: int, db: Session) -> Optional[Bundle]:
+    """Convert a dict to a Bundle model. Returns None if invalid."""
+    name = data.get("name")
+    if not name:
+        return None
+
+    # Parse listing_type
+    try:
+        listing_type = ListingType(data.get("listing_type", "standing"))
+    except ValueError:
+        listing_type = ListingType.STANDING
+
+    # Parse expires_at
+    expires_at = None
+    if data.get("expires_at"):
+        try:
+            expires_str = data["expires_at"].replace("Z", "+00:00")
+            expires_at = datetime.fromisoformat(expires_str).replace(tzinfo=None)
+        except (ValueError, AttributeError):
+            pass
+
+    bundle = Bundle(
+        user_id=user_id,
+        name=name,
+        description=data.get("description"),
+        quantity=data.get("quantity"),
+        price=data.get("price"),
+        currency=data.get("currency"),
+        location=data.get("location"),
+        listing_type=listing_type,
+        notes=data.get("notes"),
+        expires_at=expires_at,
+    )
+
+    # Add bundle items
+    items_data = data.get("items", [])
+    for item_data in items_data:
+        ticker = item_data.get("material_ticker")
+        if ticker:
+            item = BundleItem(
+                material_ticker=ticker.upper(),
+                quantity=item_data.get("quantity", 1),
+            )
+            bundle.items.append(item)
+
+    return bundle
+
+
+def _update_bundle_from_dict(bundle: Bundle, data: dict, db: Session) -> None:
+    """Update an existing bundle from dict data."""
+    if "description" in data:
+        bundle.description = data["description"]
+
+    if "quantity" in data:
+        bundle.quantity = data["quantity"]
+
+    if "price" in data:
+        bundle.price = data["price"]
+
+    if "currency" in data:
+        bundle.currency = data["currency"]
+
+    if "location" in data:
+        bundle.location = data["location"]
+
+    if "listing_type" in data:
+        try:
+            bundle.listing_type = ListingType(data["listing_type"])
+        except ValueError:
+            pass
+
+    if "notes" in data:
+        bundle.notes = data["notes"]
+
+    if "expires_at" in data:
+        if data["expires_at"]:
+            try:
+                expires_str = data["expires_at"].replace("Z", "+00:00")
+                bundle.expires_at = datetime.fromisoformat(expires_str).replace(tzinfo=None)
+            except (ValueError, AttributeError):
+                pass
+        else:
+            bundle.expires_at = None
+
+    # Replace all items if provided
+    if "items" in data:
+        for old_item in bundle.items[:]:
+            db.delete(old_item)
+
+        for item_data in data["items"]:
+            ticker = item_data.get("material_ticker")
+            if ticker:
+                item = BundleItem(
+                    bundle_id=bundle.id,
+                    material_ticker=ticker.upper(),
+                    quantity=item_data.get("quantity", 1),
+                )
+                db.add(item)
+
+    bundle.updated_at = datetime.utcnow()
 
 
 def _update_listing_from_dict(listing: Listing, data: dict) -> None:

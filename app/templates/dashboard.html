@@ -22,6 +22,7 @@
                 Refresh FIO Data
             </button>
             <a href="/listings/new" class="btn btn-primary">+ New Listing</a>
+            <a href="/bundles/new" class="btn btn-primary">+ New Bundle</a>
         </div>
     </header>
 
@@ -110,6 +111,81 @@
         <div class="empty-state">
             <p>You don't have any listings yet.</p>
             <a href="/listings/new" class="btn btn-primary">Create your first listing</a>
+        </div>
+        {% endif %}
+    </section>
+
+    <section class="my-bundles">
+        <h2>Your Bundles</h2>
+
+        {% if bundles %}
+        <div class="table-wrapper">
+        <table class="listings-table">
+            <thead>
+                <tr>
+                    <th>Name</th>
+                    <th>Items</th>
+                    <th>Qty</th>
+                    <th>Price</th>
+                    <th>Location</th>
+                    <th>Type</th>
+                    <th>Updated</th>
+                    <th>Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for bundle in bundles %}
+                {% set is_expired = bundle.expires_at and bundle.expires_at < now %}
+                <tr class="{% if is_expired %}listing-expired{% endif %}">
+                    <td><strong>{{ bundle.name }}</strong></td>
+                    <td>{{ bundle.items|length }}</td>
+                    <td>
+                        {% if bundle.quantity %}
+                            {{ bundle.quantity }}
+                        {% else %}
+                            —
+                        {% endif %}
+                    </td>
+                    <td>
+                        {% if bundle.price %}
+                            <span data-locale-number="{{ bundle.price }}" data-locale-suffix=" {{ bundle.currency or '' }}">{{ '{:,.0f}'.format(bundle.price) }} {{ bundle.currency or '' }}</span>
+                        {% else %}
+                            Contact me
+                        {% endif %}
+                    </td>
+                    <td>{{ bundle.location or '—' }}</td>
+                    <td>
+                        <span class="badge badge-{{ bundle.listing_type.value }}">
+                            {{ bundle.listing_type.value }}
+                        </span>
+                        {% if bundle.expires_at %}
+                            {% if is_expired %}
+                            <span class="badge badge-expired">Expired</span>
+                            {% else %}
+                            <span class="expiry-info">
+                                expires {{ bundle.expires_at.strftime('%d %b') }}
+                            </span>
+                            {% endif %}
+                        {% endif %}
+                    </td>
+                    <td>{{ bundle.updated_at.strftime('%Y-%m-%d') }}</td>
+                    <td class="actions">
+                        <a href="/bundles/{{ bundle.id }}/edit" class="btn btn-sm">Edit</a>
+                        <form action="/bundles/{{ bundle.id }}/delete" method="post" style="display:inline">
+                            <input type="hidden" name="{{ csrf_field_name }}" value="{{ csrf_token }}">
+                            <button type="submit" class="btn btn-sm btn-danger"
+                                    onclick="return confirm('Delete this bundle?')">Delete</button>
+                        </form>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+        </div>
+        {% else %}
+        <div class="empty-state">
+            <p>You don't have any bundles yet.</p>
+            <a href="/bundles/new" class="btn btn-primary">Create your first bundle</a>
         </div>
         {% endif %}
     </section>

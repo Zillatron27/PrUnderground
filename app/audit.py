@@ -36,6 +36,9 @@ class AuditAction:
     LISTING_CREATED = "listing_created"
     LISTING_UPDATED = "listing_updated"
     LISTING_DELETED = "listing_deleted"
+    BUNDLE_CREATED = "bundle_created"
+    BUNDLE_UPDATED = "bundle_updated"
+    BUNDLE_DELETED = "bundle_deleted"
     FIO_REFRESH = "fio_refresh"
     API_KEY_UPDATED = "api_key_updated"
 

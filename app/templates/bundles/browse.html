@@ -1,0 +1,115 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="browse-page">
+    <h1>Browse Bundles</h1>
+
+    <div class="browse-tabs">
+        <a href="/listings" class="browse-tab">Items</a>
+        <a href="/bundles" class="browse-tab active">Bundles</a>
+    </div>
+
+    <form class="filter-form" method="get" action="/bundles">
+        <div class="filter-row">
+            <div class="filter-group">
+                <label for="location">Location</label>
+                <select id="location" name="location">
+                    <option value="">All locations</option>
+                    {% for loc in available_locations %}
+                    <option value="{{ loc }}" {% if loc == filter_location %}selected{% endif %}>
+                        {{ loc }}
+                    </option>
+                    {% endfor %}
+                </select>
+                <span class="help-text">&nbsp;</span>
+            </div>
+            <div class="filter-group filter-actions-group">
+                <label>&nbsp;</label>
+                <div class="filter-actions">
+                    <button type="submit" class="btn btn-primary">Search</button>
+                    {% if filter_location %}
+                    <a href="/bundles" class="btn btn-secondary">Clear</a>
+                    {% endif %}
+                </div>
+                <span class="help-text">&nbsp;</span>
+            </div>
+        </div>
+    </form>
+
+    {% if bundles %}
+    <div class="table-wrapper">
+    <table class="listings-table">
+        <thead>
+            <tr>
+                <th>Seller</th>
+                <th>Bundle Name</th>
+                <th>Items</th>
+                <th>Qty</th>
+                <th>Price</th>
+                <th>Location</th>
+                <th>Updated</th>
+                <th></th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for bundle in bundles %}
+            <tr>
+                <td>
+                    <a href="/u/{{ bundle.user.fio_username }}">
+                        {% if bundle.user.company_code %}[{{ bundle.user.company_code }}]{% endif %}
+                        {{ bundle.user.fio_username }}
+                    </a>
+                </td>
+                <td><strong>{{ bundle.name }}</strong></td>
+                <td>{{ bundle.items|length }}</td>
+                <td>
+                    {% if bundle.quantity %}
+                        <span data-locale-number="{{ bundle.quantity }}">{{ '{:,}'.format(bundle.quantity) }}</span>
+                    {% else %}
+                        —
+                    {% endif %}
+                </td>
+                <td>
+                    {% if bundle.price %}
+                        <span data-locale-number="{{ bundle.price }}" data-locale-suffix=" {{ bundle.currency or '' }}">{{ '{:,.0f}'.format(bundle.price) }} {{ bundle.currency or '' }}</span>
+                    {% else %}
+                        Contact me
+                    {% endif %}
+                </td>
+                <td>{{ bundle.location or '—' }}</td>
+                <td>{{ bundle.updated_at.strftime('%Y-%m-%d') }}</td>
+                <td>
+                    <button class="btn btn-sm btn-secondary"
+                            hx-get="/bundles/{{ bundle.id }}/detail"
+                            hx-target="#modal-container"
+                            hx-swap="innerHTML">
+                        View
+                    </button>
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+    </div>
+    {% else %}
+    <div class="empty-state">
+        <p>No bundles found{% if filter_location %} matching your filters{% endif %}.</p>
+    </div>
+    {% endif %}
+</div>
+
+<div id="modal-container"></div>
+
+<script>
+function closeModal(event) {
+    if (event && event.target !== event.currentTarget) return;
+    document.getElementById('modal-container').innerHTML = '';
+}
+
+document.addEventListener('keydown', function(e) {
+    if (e.key === 'Escape') {
+        closeModal();
+    }
+});
+</script>
+{% endblock %}

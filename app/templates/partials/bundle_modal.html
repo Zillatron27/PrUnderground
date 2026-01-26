@@ -1,0 +1,68 @@
+<div class="modal-overlay" onclick="closeModal(event)">
+    <div class="modal-content" onclick="event.stopPropagation()">
+        <button class="modal-close" onclick="closeModal()">&times;</button>
+
+        <h2>{{ bundle.name }}</h2>
+
+        {% if bundle.description %}
+        <p class="bundle-description">{{ bundle.description }}</p>
+        {% endif %}
+
+        <div class="bundle-meta">
+            <div class="meta-item">
+                <span class="meta-label">Seller</span>
+                <a href="/u/{{ bundle.user.fio_username }}">
+                    {% if bundle.user.company_code %}[{{ bundle.user.company_code }}]{% endif %}
+                    {{ bundle.user.fio_username }}
+                </a>
+            </div>
+            {% if bundle.location %}
+            <div class="meta-item">
+                <span class="meta-label">Pickup Location</span>
+                <span>{{ bundle.location }}</span>
+            </div>
+            {% endif %}
+            <div class="meta-item">
+                <span class="meta-label">Price</span>
+                <span>
+                    {% if bundle.price %}
+                        <span data-locale-number="{{ bundle.price }}" data-locale-suffix=" {{ bundle.currency or '' }}">{{ '{:,.0f}'.format(bundle.price) }} {{ bundle.currency or '' }}</span>
+                    {% else %}
+                        Contact seller
+                    {% endif %}
+                </span>
+            </div>
+            {% if bundle.quantity %}
+            <div class="meta-item">
+                <span class="meta-label">Available</span>
+                <span data-locale-number="{{ bundle.quantity }}">{{ '{:,}'.format(bundle.quantity) }}</span>
+            </div>
+            {% endif %}
+        </div>
+
+        <h3>Bundle Contents</h3>
+        <table class="bundle-items-table">
+            <thead>
+                <tr>
+                    <th>Material</th>
+                    <th>Quantity</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for item in bundle.items %}
+                <tr>
+                    <td><strong>{{ item.material_ticker }}</strong></td>
+                    <td><span data-locale-number="{{ item.quantity }}">{{ '{:,}'.format(item.quantity) }}</span></td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+
+        {% if bundle.notes %}
+        <div class="bundle-notes">
+            <h3>Notes</h3>
+            <p>{{ bundle.notes }}</p>
+        </div>
+        {% endif %}
+    </div>
+</div>

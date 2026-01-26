@@ -88,7 +88,54 @@
         </div>
         {% endif %}
     </section>
+
+    {% if bundles %}
+    <section class="profile-bundles">
+        <h2>Bundles ({{ bundles|length }})</h2>
+        <div class="table-wrapper">
+        <table class="listings-table">
+            <thead>
+                <tr>
+                    <th>Name</th>
+                    <th>Items</th>
+                    <th>Price</th>
+                    <th>Location</th>
+                    <th>Updated</th>
+                    <th></th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for bundle in bundles %}
+                <tr>
+                    <td><strong>{{ bundle.name }}</strong></td>
+                    <td>{{ bundle.items|length }}</td>
+                    <td>
+                        {% if bundle.price %}
+                            <span data-locale-number="{{ bundle.price }}" data-locale-suffix=" {{ bundle.currency or '' }}">{{ '{:,.0f}'.format(bundle.price) }} {{ bundle.currency or '' }}</span>
+                        {% else %}
+                            Contact me
+                        {% endif %}
+                    </td>
+                    <td>{{ bundle.location or '—' }}</td>
+                    <td>{{ bundle.updated_at.strftime('%Y-%m-%d') }}</td>
+                    <td>
+                        <button class="btn btn-sm btn-secondary"
+                                hx-get="/bundles/{{ bundle.id }}/detail"
+                                hx-target="#modal-container"
+                                hx-swap="innerHTML">
+                            View
+                        </button>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+        </div>
+    </section>
+    {% endif %}
 </div>
+
+<div id="modal-container"></div>
 
 <script>
 async function copyDiscordFormat() {
@@ -106,5 +153,16 @@ async function copyDiscordFormat() {
         btn.classList.remove('btn-success');
     }, 2000);
 }
+
+function closeModal(event) {
+    if (event && event.target !== event.currentTarget) return;
+    document.getElementById('modal-container').innerHTML = '';
+}
+
+document.addEventListener('keydown', function(e) {
+    if (e.key === 'Escape') {
+        closeModal();
+    }
+});
 </script>
 {% endblock %}

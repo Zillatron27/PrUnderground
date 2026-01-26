@@ -1,0 +1,18 @@
+<div class="bundle-item-row" data-index="{{ index }}">
+    <div class="form-row">
+        <div class="form-group">
+            <input type="text" name="item_ticker_{{ index }}"
+                   value="{{ item.material_ticker if item else '' }}"
+                   required maxlength="10" placeholder="Material"
+                   list="material-list">
+        </div>
+        <div class="form-group">
+            <input type="number" name="item_qty_{{ index }}"
+                   value="{{ item.quantity if item else 1 }}"
+                   min="1" required placeholder="Qty">
+        </div>
+        <div class="form-group">
+            <button type="button" class="btn btn-sm btn-danger" onclick="removeItemRow(this)">Remove</button>
+        </div>
+    </div>
+</div>

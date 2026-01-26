@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en" class="{{ display_classes|default('') }}">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -12,15 +12,22 @@
     <nav class="navbar">
         <div class="nav-brand">
             <div class="spinner-data" id="global-spinner"></div>
-            <a href="/">PrUnderground</a>
+            <a href="/" class="nav-logo">PrUnderground</a>
         </div>
+
+        <!-- Hamburger toggle (CSS-only, hidden on desktop) -->
+        <input type="checkbox" id="nav-toggle" class="nav-toggle-input" aria-label="Toggle navigation">
+        <label for="nav-toggle" class="nav-toggle-label" aria-hidden="true">
+            <span class="hamburger-icon"></span>
+        </label>
+
         <div class="nav-links">
             {% if current_user %}
                 <a href="/dashboard">Dashboard</a>
             {% endif %}
             <a href="/listings">Browse</a>
             {% if current_user %}
-                <a href="/u/{{ current_user.fio_username }}">Public Profile</a>
+                <a href="/u/{{ current_user.fio_username }}">Profile</a>
                 <a href="/auth/account">Account</a>
                 <a href="/auth/logout">Logout</a>
             {% else %}
@@ -33,9 +40,11 @@
         {% block content %}{% endblock %}
     </main>
 
+    {% if chrome_visible|default(true) %}
     <footer class="footer">
         <p>PrUnderground v{{ app_version }} · <a href="https://github.com/Zillatron27/PrUnderground">GitHub</a> · <a href="/about">About</a></p>
     </footer>
+    {% endif %}
 
     <script src="/static/js/app.js"></script>
 </body>

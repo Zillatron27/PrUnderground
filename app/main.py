@@ -7,7 +7,7 @@ load_dotenv()
 
 from fastapi import FastAPI, Request, Depends
 from fastapi.staticfiles import StaticFiles
-from fastapi.responses import HTMLResponse, PlainTextResponse
+from fastapi.responses import HTMLResponse, PlainTextResponse, Response
 from sqlalchemy.orm import Session
 from slowapi import Limiter
 from slowapi.util import get_remote_address
@@ -91,6 +91,17 @@ async def rate_limit_handler(request: Request, exc: RateLimitExceeded):
         content=f"Rate limit exceeded. Please try again later. Limit: {exc.detail}",
         status_code=429,
     )
+
+
+# Middleware to allow embedding in APEX (Refined PrUn's XIT WEB command)
+@app.middleware("http")
+async def frame_headers(request: Request, call_next):
+    response: Response = await call_next(request)
+    response.headers["Content-Security-Policy"] = (
+        "frame-ancestors 'self' https://apex.prosperousuniverse.com "
+        "https://*.prosperousuniverse.com"
+    )
+    return response
 
 # Mount static files
 app.mount("/static", StaticFiles(directory="app/static"), name="static")

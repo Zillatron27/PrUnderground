@@ -1,4 +1,5 @@
 {% extends "base.html" %}
+{% from "macros/responsive.html" import seller_display, material_ticker, quantity_display, cx_location, price_display %}
 
 {% block content %}
 <div class="browse-page">
@@ -68,25 +69,25 @@
     <table class="listings-table" id="listings-table">
         <thead>
             <tr>
-                <th>Seller</th>
-                <th class="sortable" data-column="material">
+                <th class="col-seller">Seller</th>
+                <th class="col-material sortable" data-column="material">
                     Material
                     {% for col, dir in sort_spec %}{% if col == 'material' %}<span class="sort-indicator">{% if dir == 'asc' %}▲{% else %}▼{% endif %}</span>{% endif %}{% endfor %}
                 </th>
-                <th class="sortable" data-column="quantity">
-                    Quantity
+                <th class="col-quantity sortable" data-column="quantity">
+                    Qty
                     {% for col, dir in sort_spec %}{% if col == 'quantity' %}<span class="sort-indicator">{% if dir == 'asc' %}▲{% else %}▼{% endif %}</span>{% endif %}{% endfor %}
                 </th>
-                <th class="sortable" data-column="price">
+                <th class="col-price sortable" data-column="price">
                     Price
                     {% for col, dir in sort_spec %}{% if col == 'price' %}<span class="sort-indicator">{% if dir == 'asc' %}▲{% else %}▼{% endif %}</span>{% endif %}{% endfor %}
                 </th>
-                <th class="sortable" data-column="location">
+                <th class="col-location sortable" data-column="location">
                     Location
                     {% for col, dir in sort_spec %}{% if col == 'location' %}<span class="sort-indicator">{% if dir == 'asc' %}▲{% else %}▼{% endif %}</span>{% endif %}{% endfor %}
                 </th>
-                <th>Notes</th>
-                <th class="sortable" data-column="updated">
+                <th class="col-notes">Notes</th>
+                <th class="col-updated sortable" data-column="updated">
                     Updated
                     {% for col, dir in sort_spec %}{% if col == 'updated' %}<span class="sort-indicator">{% if dir == 'asc' %}▲{% else %}▼{% endif %}</span>{% endif %}{% endfor %}
                 </th>
@@ -95,31 +96,15 @@
         <tbody>
             {% for listing in listings %}
             <tr>
-                <td>
-                    <a href="/u/{{ listing.user.fio_username }}">
-                        {% if listing.user.company_code %}[{{ listing.user.company_code }}]{% endif %}
-                        {{ listing.user.fio_username }}
-                    </a>
+                <td class="col-seller">{{ seller_display(listing.user) }}</td>
+                <td class="col-material">{{ material_ticker(listing.material_ticker) }}</td>
+                <td class="col-quantity qty-cell"{% if listing.available_quantity is not none and is_sync_stale(listing.user) %} title="FIO data updated > 1 day ago"{% endif %}>
+                    {{ quantity_display(listing) }}
                 </td>
-                <td><strong>{{ listing.material_ticker }}</strong></td>
-                <td class="qty-cell"{% if listing.available_quantity is not none and is_sync_stale(listing.user) %} title="FIO data updated > 1 day ago"{% endif %}>
-                    {% if listing.available_quantity is not none %}
-                        {{ '{:,}'.format(listing.available_quantity) }}
-                    {% elif listing.quantity %}
-                        {{ '{:,}'.format(listing.quantity) }}
-                    {% else %}
-                        —
-                    {% endif %}
-                    {% if get_stock_status(listing) == 'out' %}
-                        <span class="badge badge-out-of-stock">OUT OF STOCK</span>
-                    {% elif get_stock_status(listing) == 'low' %}
-                        <span class="badge badge-low-stock">LOW STOCK</span>
-                    {% endif %}
-                </td>
-                <td>{{ format_price(listing) }}</td>
-                <td>{{ listing.storage_name or listing.location or '—' }}</td>
-                <td class="notes-cell" {% if listing.notes %}title="{{ listing.notes }}"{% endif %}>{{ listing.notes or '—' }}</td>
-                <td>{{ listing.updated_at.strftime('%Y-%m-%d') }}</td>
+                <td class="col-price">{{ price_display(listing) }}</td>
+                <td class="col-location">{{ cx_location(listing.storage_name or listing.location) }}</td>
+                <td class="col-notes notes-cell" {% if listing.notes %}title="{{ listing.notes }}"{% endif %}>{{ listing.notes or '—' }}</td>
+                <td class="col-updated">{{ listing.updated_at.strftime('%Y-%m-%d') }}</td>
             </tr>
             {% endfor %}
         </tbody>

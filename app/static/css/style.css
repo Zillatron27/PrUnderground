@@ -55,6 +55,10 @@
     --space-xl: 32px;
     --space-2xl: 48px;
 
+    /* Responsive breakpoints */
+    --bp-narrow: 450px;
+    --bp-medium: 720px;
+
     /* Legacy aliases for compatibility */
     --color-bg: var(--bg-primary);
     --color-surface: var(--bg-secondary);
@@ -170,6 +174,61 @@ body.loading #global-spinner::after {
     text-decoration: none;
 }
 
+/* ----------------------------------------
+   Hamburger Menu (CSS-only)
+   ---------------------------------------- */
+.nav-toggle-input {
+    display: none;
+}
+
+.nav-toggle-label {
+    display: none;
+    cursor: pointer;
+    padding: var(--space-sm);
+    z-index: 100;
+}
+
+.hamburger-icon {
+    display: block;
+    width: 24px;
+    height: 2px;
+    background: var(--text-primary);
+    position: relative;
+    transition: background 0.2s;
+}
+
+.hamburger-icon::before,
+.hamburger-icon::after {
+    content: '';
+    position: absolute;
+    width: 24px;
+    height: 2px;
+    background: var(--text-primary);
+    left: 0;
+    transition: transform 0.2s;
+}
+
+.hamburger-icon::before {
+    top: -7px;
+}
+
+.hamburger-icon::after {
+    top: 7px;
+}
+
+/* Hamburger animation when open */
+.nav-toggle-input:checked + .nav-toggle-label .hamburger-icon {
+    background: transparent;
+}
+
+.nav-toggle-input:checked + .nav-toggle-label .hamburger-icon::before {
+    transform: rotate(45deg) translate(5px, 5px);
+}
+
+.nav-toggle-input:checked + .nav-toggle-label .hamburger-icon::after {
+    transform: rotate(-45deg) translate(5px, -5px);
+}
+
 /* ========================================
    Container
    ======================================== */
@@ -178,6 +237,15 @@ body.loading #global-spinner::after {
     margin: 0 auto;
     padding: var(--space-lg);
     flex: 1;
+    container-type: inline-size;
+}
+
+/* Container query setup for responsive components */
+.table-wrapper,
+.filter-form,
+.listing-form,
+.navbar {
+    container-type: inline-size;
 }
 
 /* ========================================
@@ -1196,6 +1264,7 @@ table tbody tr:hover {
     background: var(--bg-secondary);
     padding: var(--space-md);
     border: 1px solid var(--border-subtle);
+    container-type: inline-size;
 }
 
 .price-fields {
@@ -1279,80 +1348,164 @@ table tbody tr:hover {
 }
 
 /* ========================================
-   Responsive
+   Responsive - Three-tier system
+   Narrow: <=450px, Medium: 451-720px, Desktop: >720px
+   Uses container queries with media query fallbacks
    ======================================== */
-@media (max-width: 768px) {
-    /* Base layout - prevent horizontal overflow */
-    html, body {
-        overflow-x: hidden;
+
+/* ----------------------------------------
+   URL Parameter Overrides
+   ---------------------------------------- */
+/* Force narrow mode (embed or ?narrow=1) */
+html.force-narrow .container {
+    padding: var(--space-sm);
+}
+
+html.force-narrow .nav-toggle-label {
+    display: flex;
+}
+
+html.force-narrow .nav-links {
+    position: absolute;
+    top: 100%;
+    left: 0;
+    right: 0;
+    background: var(--bg-secondary);
+    border-bottom: 1px solid var(--border-subtle);
+    flex-direction: column;
+    padding: 0;
+    max-height: 0;
+    overflow: hidden;
+    transition: max-height 0.3s ease, padding 0.3s ease;
+}
+
+html.force-narrow .nav-toggle-input:checked ~ .nav-links {
+    max-height: 300px;
+    padding: var(--space-sm) 0;
+}
+
+html.force-narrow .nav-links a {
+    padding: var(--space-sm) var(--space-md);
+    border-bottom: 1px solid var(--border-subtle);
+}
+
+html.force-narrow .nav-links a:last-child {
+    border-bottom: none;
+}
+
+/* Hide chrome (embed or ?chrome=0) */
+html.no-chrome .footer {
+    display: none;
+}
+
+html.no-chrome .nav-logo {
+    display: none;
+}
+
+/* Force desktop mode (?embed=0) */
+html.force-desktop .nav-toggle-label {
+    display: none !important;
+}
+
+html.force-desktop .nav-links {
+    position: static !important;
+    max-height: none !important;
+    flex-direction: row !important;
+    background: transparent !important;
+    border: none !important;
+    padding: 0 !important;
+}
+
+/* ----------------------------------------
+   Stock Status Dots (narrow mode)
+   ---------------------------------------- */
+.stock-dot {
+    display: none;
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    margin-left: var(--space-xs);
+    flex-shrink: 0;
+}
+
+.stock-dot.stock-out {
+    background: var(--accent-red);
+}
+
+.stock-dot.stock-low {
+    background: var(--accent-orange);
+}
+
+/* ----------------------------------------
+   Responsive Display Helpers
+   ---------------------------------------- */
+.hide-narrow {
+    display: initial;
+}
+
+.show-narrow {
+    display: none;
+}
+
+/* ----------------------------------------
+   Media Query Fallbacks (for browsers without container query support)
+   ---------------------------------------- */
+@media (max-width: 720px) {
+    /* Show hamburger menu */
+    .nav-toggle-label {
+        display: flex;
+        align-items: center;
     }
 
-    .container {
-        padding: var(--space-sm);
-        max-width: 100vw;
-    }
-
-    main {
-        padding: var(--space-sm);
-        max-width: 100vw;
-        overflow-x: hidden;
-    }
-
-    /* Navbar */
     .navbar {
-        flex-direction: column;
-        gap: var(--space-sm);
-        padding: var(--space-sm);
-    }
-
-    .nav-brand {
-        font-size: var(--text-base);
+        position: relative;
     }
 
     .nav-links {
-        gap: var(--space-xs);
-        flex-wrap: wrap;
-        justify-content: center;
+        position: absolute;
+        top: 100%;
+        left: 0;
+        right: 0;
+        background: var(--bg-secondary);
+        border-bottom: 1px solid var(--border-subtle);
+        flex-direction: column;
+        padding: 0;
+        max-height: 0;
+        overflow: hidden;
+        transition: max-height 0.3s ease, padding 0.3s ease;
+        z-index: 50;
+    }
+
+    .nav-toggle-input:checked ~ .nav-links {
+        max-height: 300px;
+        padding: var(--space-sm) 0;
     }
 
     .nav-links a {
-        padding: var(--space-xs) var(--space-sm);
-        font-size: var(--text-sm);
+        padding: var(--space-sm) var(--space-md);
+        border-bottom: 1px solid var(--border-subtle);
     }
 
-    /* Forms */
-    .form-row {
+    .nav-links a:last-child {
+        border-bottom: none;
+    }
+
+    /* Filter form reflow */
+    .filter-row {
         flex-direction: column;
+        gap: var(--space-sm);
     }
 
-    .form-group {
+    .filter-group {
         width: 100%;
     }
 
-    .form-actions {
-        flex-direction: column;
-    }
-
-    .form-actions .btn {
-        width: 100%;
-    }
-
-    /* Dashboard */
-    .dashboard {
-        padding: var(--space-sm);
-        max-width: 100%;
-        overflow-x: hidden;
-    }
-
+    /* Dashboard header */
     .dashboard-header {
         flex-direction: column;
         gap: var(--space-sm);
         text-align: center;
         align-items: stretch;
-    }
-
-    .dashboard-header > div:first-child {
-        width: 100%;
     }
 
     .dashboard-actions {
@@ -1364,14 +1517,9 @@ table tbody tr:hover {
     .dashboard-actions .btn {
         width: 100%;
         text-align: center;
-        justify-content: center;
     }
 
-    /* Profile */
-    .profile-page {
-        overflow-x: hidden;
-    }
-
+    /* Profile header */
     .profile-header {
         flex-direction: column;
         gap: var(--space-sm);
@@ -1393,14 +1541,6 @@ table tbody tr:hover {
         padding: var(--space-lg) var(--space-sm);
     }
 
-    .hero h1 {
-        font-size: var(--text-xl);
-    }
-
-    .hero p {
-        font-size: var(--text-base);
-    }
-
     .hero-cta {
         flex-direction: column;
         width: 100%;
@@ -1410,110 +1550,205 @@ table tbody tr:hover {
         width: 100%;
     }
 
-    /* Tables - horizontal scroll */
-    .table-wrapper {
-        overflow-x: auto;
-        -webkit-overflow-scrolling: touch;
-        margin: 0 calc(-1 * var(--space-sm));
-        padding: 0 var(--space-sm);
-    }
-
-    .listings-table {
-        font-size: var(--text-sm);
-        min-width: 550px;
-        width: max-content;
-    }
-
-    .listings-table th,
-    .listings-table td {
-        padding: var(--space-xs) var(--space-sm);
-        white-space: nowrap;
-    }
-
-    /* Hide less important columns on mobile */
-    .listings-table .notes-cell {
-        max-width: 80px;
-    }
-
-    /* Browse page */
-    .browse-page {
-        overflow-x: hidden;
-    }
-
-    /* Filter form */
-    .filter-row {
+    /* Sort builder */
+    .sort-builder {
         flex-direction: column;
-        gap: var(--space-sm);
-    }
-
-    .filter-group {
-        width: 100%;
-    }
-
-    .filter-actions {
-        width: 100%;
-        flex-direction: column;
-    }
-
-    .filter-actions .btn {
-        width: 100%;
-    }
-
-    /* Cards and sections */
-    section {
-        margin-bottom: var(--space-md);
-    }
-
-    section h2 {
-        font-size: var(--text-lg);
-    }
-
-    /* Discord preview */
-    .discord-preview {
-        font-size: var(--text-xs);
-    }
-
-    /* Suggestions chips */
-    .suggestion-chips {
+        align-items: flex-start;
         gap: var(--space-xs);
     }
 
-    .suggestion-chip {
-        padding: var(--space-xs) var(--space-sm);
-        font-size: var(--text-xs);
+    /* Table column visibility - Medium tier */
+    .col-notes {
+        max-width: 80px;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+    }
+}
+
+@media (max-width: 450px) {
+    /* Narrow tier */
+    .container {
+        padding: var(--space-sm);
     }
 
-    /* Buttons */
-    .btn {
-        padding: var(--space-sm) var(--space-md);
-        font-size: var(--text-sm);
+    /* Hide columns at narrow */
+    .col-notes,
+    .col-updated {
+        display: none;
     }
 
-    .btn-sm {
-        padding: var(--space-xs) var(--space-sm);
-        font-size: var(--text-xs);
+    /* Show dots instead of badges */
+    .stock-dot {
+        display: inline-block;
     }
 
-    /* Action buttons in table */
+    .badge-out-of-stock,
+    .badge-low-stock {
+        display: none;
+    }
+
+    /* Responsive helpers */
+    .hide-narrow {
+        display: none !important;
+    }
+
+    .show-narrow {
+        display: initial !important;
+    }
+
+    /* Form actions stack */
+    .form-actions {
+        flex-direction: column;
+    }
+
+    .form-actions .btn {
+        width: 100%;
+    }
+
+    /* Table action buttons */
     .actions {
-        display: flex;
         flex-direction: column;
         gap: var(--space-xs);
     }
 
     .actions .btn {
         width: 100%;
+        text-align: center;
     }
 
-    /* Empty state */
-    .empty-state {
-        padding: var(--space-lg);
+    /* Hero title */
+    .hero h1 {
+        font-size: var(--text-xl);
     }
 
     /* Price options */
     .price-options {
         flex-direction: column;
         gap: var(--space-xs);
+    }
+}
+
+/* ----------------------------------------
+   Container Queries (modern browsers)
+   ---------------------------------------- */
+@supports (container-type: inline-size) {
+    /* Filter form reflow */
+    @container (max-width: 720px) {
+        .filter-row {
+            flex-direction: column;
+            gap: var(--space-sm);
+        }
+
+        .filter-group {
+            width: 100%;
+        }
+
+        .filter-actions {
+            width: 100%;
+        }
+    }
+
+    /* Form field reflow */
+    @container (max-width: 450px) {
+        .form-row {
+            flex-direction: column;
+        }
+
+        .form-row .form-group {
+            width: 100%;
+        }
+    }
+}
+
+/* ----------------------------------------
+   Sticky Table Header
+   ---------------------------------------- */
+.listings-table thead {
+    position: sticky;
+    top: 0;
+    z-index: 10;
+}
+
+.listings-table thead th {
+    background: var(--bg-tertiary);
+}
+
+/* ----------------------------------------
+   Form Reflow at Narrow
+   ---------------------------------------- */
+@media (max-width: 450px) {
+    /* Listing form: CX relative fields stack */
+    #price-cx-fields {
+        flex-direction: column;
+    }
+
+    #price-cx-fields .form-group {
+        width: 100%;
+    }
+
+    /* Bundle form: item rows reflow */
+    .bundle-item-row .form-row {
+        flex-wrap: wrap;
+    }
+
+    .bundle-item-row .form-group:first-child {
+        flex: 1 1 100%;
+        margin-bottom: var(--space-xs);
+    }
+
+    .bundle-item-row .form-group:nth-child(2) {
+        flex: 1 1 auto;
+    }
+
+    .bundle-item-row .form-group:last-child {
+        flex: 0 0 auto;
+    }
+
+    /* Price fields in bundle form */
+    #bundle-price-fields {
+        flex-direction: column;
+    }
+
+    #bundle-price-fields .form-group {
+        width: 100%;
+    }
+
+    /* Form row generic reflow */
+    .form-row {
+        flex-direction: column;
+    }
+
+    .form-row .form-group {
+        width: 100%;
+    }
+}
+
+/* ----------------------------------------
+   Column Visibility at Narrow
+   ---------------------------------------- */
+@media (max-width: 450px) {
+    .col-notes,
+    .col-updated {
+        display: none;
+    }
+
+    /* Truncate seller on narrow */
+    .col-seller {
+        max-width: 80px;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+    }
+}
+
+@media (max-width: 720px) and (min-width: 451px) {
+    /* Medium: truncate notes */
+    .col-notes {
+        max-width: 80px;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
     }
 }
 

@@ -1,4 +1,5 @@
 {% extends "base.html" %}
+{% from "macros/responsive.html" import seller_display, cx_location, bundle_price_display, bundle_quantity_display %}
 
 {% block content %}
 <div class="browse-page">
@@ -41,44 +42,27 @@
     <table class="listings-table">
         <thead>
             <tr>
-                <th>Seller</th>
-                <th>Bundle Name</th>
-                <th>Items</th>
-                <th>Qty</th>
-                <th>Price</th>
-                <th>Location</th>
-                <th>Updated</th>
-                <th></th>
+                <th class="col-seller">Seller</th>
+                <th class="col-name">Bundle</th>
+                <th class="col-items">Items</th>
+                <th class="col-quantity">Qty</th>
+                <th class="col-price">Price</th>
+                <th class="col-location">Location</th>
+                <th class="col-updated">Updated</th>
+                <th class="col-actions"></th>
             </tr>
         </thead>
         <tbody>
             {% for bundle in bundles %}
             <tr>
-                <td>
-                    <a href="/u/{{ bundle.user.fio_username }}">
-                        {% if bundle.user.company_code %}[{{ bundle.user.company_code }}]{% endif %}
-                        {{ bundle.user.fio_username }}
-                    </a>
-                </td>
-                <td><strong>{{ bundle.name }}</strong></td>
-                <td>{{ bundle.items|length }}</td>
-                <td>
-                    {% if bundle.quantity %}
-                        <span data-locale-number="{{ bundle.quantity }}">{{ '{:,}'.format(bundle.quantity) }}</span>
-                    {% else %}
-                        —
-                    {% endif %}
-                </td>
-                <td>
-                    {% if bundle.price %}
-                        <span data-locale-number="{{ bundle.price }}" data-locale-suffix=" {{ bundle.currency or '' }}">{{ '{:,.0f}'.format(bundle.price) }} {{ bundle.currency or '' }}</span>
-                    {% else %}
-                        Contact me
-                    {% endif %}
-                </td>
-                <td>{{ bundle.location or '—' }}</td>
-                <td>{{ bundle.updated_at.strftime('%Y-%m-%d') }}</td>
-                <td>
+                <td class="col-seller">{{ seller_display(bundle.user) }}</td>
+                <td class="col-name"><strong>{{ bundle.name }}</strong></td>
+                <td class="col-items">{{ bundle.items|length }}</td>
+                <td class="col-quantity">{{ bundle_quantity_display(bundle) }}</td>
+                <td class="col-price">{{ bundle_price_display(bundle) }}</td>
+                <td class="col-location">{{ cx_location(bundle.location) }}</td>
+                <td class="col-updated">{{ bundle.updated_at.strftime('%Y-%m-%d') }}</td>
+                <td class="col-actions">
                     <button class="btn btn-sm btn-secondary"
                             hx-get="/bundles/{{ bundle.id }}/detail"
                             hx-target="#modal-container"

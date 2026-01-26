@@ -1,0 +1,130 @@
+{#
+    Responsive display macros for PrUnderground
+    These macros provide both full and condensed versions of common display elements.
+    CSS controls which version is visible based on screen size.
+#}
+
+{# CX station abbreviations #}
+{% set CX_ABBREV = {
+    'Antares Station': 'ANT',
+    'Moria Station': 'MOR',
+    'Benten Station': 'BEN',
+    'Hortus Station': 'HRT',
+    'Arclight Station': 'ARC'
+} %}
+
+{#
+    Material ticker display
+    Always bold, monospace, cyan - same at all sizes
+#}
+{% macro material_ticker(ticker) -%}
+<span class="ticker">{{ ticker }}</span>
+{%- endmacro %}
+
+{#
+    Seller display with optional corp code
+    Desktop: [CORP] Username
+    Narrow: Username only
+#}
+{% macro seller_display(user) -%}
+<a href="/u/{{ user.fio_username }}">
+    {%- if user.company_code %}<span class="hide-narrow">[{{ user.company_code }}] </span>{% endif -%}
+    {{ user.fio_username }}
+</a>
+{%- endmacro %}
+
+{#
+    CX location display
+    Desktop: Full name (Moria Station)
+    Narrow: Abbreviation (MOR)
+#}
+{% macro cx_location(location) -%}
+{%- if location -%}
+    <span class="hide-narrow">{{ location }}</span>
+    <span class="show-narrow">{{ CX_ABBREV.get(location, location) }}</span>
+{%- else -%}
+    —
+{%- endif -%}
+{%- endmacro %}
+
+{#
+    Price display
+    Desktop: Full formatted price (1,500,000/u)
+    Narrow: Condensed (1.5m/u)
+#}
+{% macro price_display(listing) -%}
+<span class="hide-narrow">{{ format_price(listing) }}</span>
+<span class="show-narrow">
+    {%- if listing.price -%}
+        {{ condense_number(listing.price) }}
+        {%- if listing.price_type and listing.price_type.value == 'per_unit' %}/u{% endif -%}
+        {%- if listing.currency %} {{ listing.currency }}{% endif -%}
+    {%- elif listing.cx_price_percent -%}
+        CX {{ '{:+.0f}'.format(listing.cx_price_percent) }}%
+    {%- else -%}
+        —
+    {%- endif -%}
+</span>
+{%- endmacro %}
+
+{#
+    Quantity display with stock status
+    Desktop: Number + text badge (OUT OF STOCK, LOW STOCK)
+    Narrow: Number + color dot indicator
+#}
+{% macro quantity_display(listing) -%}
+{%- set qty = listing.available_quantity if listing.available_quantity is not none else listing.quantity -%}
+{%- set status = get_stock_status(listing) -%}
+<span class="qty-value">
+    {%- if qty is not none -%}
+        {{ '{:,}'.format(qty) }}
+    {%- else -%}
+        —
+    {%- endif -%}
+</span>
+{%- if status == 'out' -%}
+    <span class="badge badge-out-of-stock hide-narrow">OUT OF STOCK</span>
+    <span class="stock-dot stock-out show-narrow" title="Out of stock"></span>
+{%- elif status == 'low' -%}
+    <span class="badge badge-low-stock hide-narrow">LOW STOCK</span>
+    <span class="stock-dot stock-low show-narrow" title="Low stock"></span>
+{%- endif -%}
+{%- endmacro %}
+
+{#
+    Bundle price display
+    Desktop: Full formatted price
+    Narrow: Condensed
+#}
+{% macro bundle_price_display(bundle) -%}
+{%- if bundle.price -%}
+    <span class="hide-narrow">{{ '{:,.0f}'.format(bundle.price) }} {{ bundle.currency or '' }}</span>
+    <span class="show-narrow">{{ condense_number(bundle.price) }}{{ ' ' + bundle.currency if bundle.currency else '' }}</span>
+{%- else -%}
+    Contact me
+{%- endif -%}
+{%- endmacro %}
+
+{#
+    Bundle quantity display
+    Desktop: Full number with comma formatting
+    Narrow: Condensed
+#}
+{% macro bundle_quantity_display(bundle) -%}
+{%- if bundle.quantity -%}
+    <span class="hide-narrow">{{ '{:,}'.format(bundle.quantity) }}</span>
+    <span class="show-narrow">{{ condense_number(bundle.quantity) }}</span>
+{%- else -%}
+    —
+{%- endif -%}
+{%- endmacro %}
+
+{#
+    Date display
+    Desktop: YYYY-MM-DD
+    Narrow: MM-DD (current year assumed)
+#}
+{% macro date_display(dt) -%}
+<span class="hide-narrow">{{ dt.strftime('%Y-%m-%d') }}</span>
+<span class="show-narrow">{{ dt.strftime('%m-%d') }}</span>
+{%- endmacro %}

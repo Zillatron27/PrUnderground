@@ -1,4 +1,5 @@
 {% extends "base.html" %}
+{% from "macros/responsive.html" import material_ticker, quantity_display, price_display, cx_location, bundle_price_display %}
 
 {% block content %}
 <div class="profile-page">
@@ -41,42 +42,29 @@
         <table class="listings-table">
             <thead>
                 <tr>
-                    <th>Material</th>
-                    <th>Quantity</th>
-                    <th>Price</th>
-                    <th>Location</th>
-                    <th>Type</th>
-                    <th>Notes</th>
-                    <th>Updated</th>
+                    <th class="col-material">Material</th>
+                    <th class="col-quantity">Qty</th>
+                    <th class="col-price">Price</th>
+                    <th class="col-location">Location</th>
+                    <th class="col-type">Type</th>
+                    <th class="col-notes">Notes</th>
+                    <th class="col-updated">Updated</th>
                 </tr>
             </thead>
             <tbody>
                 {% for listing in listings %}
                 <tr>
-                    <td><strong>{{ listing.material_ticker }}</strong></td>
-                    <td class="qty-cell">
-                        {% if listing.available_quantity is not none %}
-                            {{ '{:,}'.format(listing.available_quantity) }}
-                        {% elif listing.quantity %}
-                            {{ '{:,}'.format(listing.quantity) }}
-                        {% else %}
-                            —
-                        {% endif %}
-                        {% if get_stock_status(listing) == 'out' %}
-                            <span class="badge badge-out-of-stock">OUT OF STOCK</span>
-                        {% elif get_stock_status(listing) == 'low' %}
-                            <span class="badge badge-low-stock">LOW STOCK</span>
-                        {% endif %}
-                    </td>
-                    <td>{{ format_price(listing) }}</td>
-                    <td>{{ listing.storage_name or listing.location or '—' }}</td>
-                    <td>
+                    <td class="col-material">{{ material_ticker(listing.material_ticker) }}</td>
+                    <td class="col-quantity qty-cell">{{ quantity_display(listing) }}</td>
+                    <td class="col-price">{{ price_display(listing) }}</td>
+                    <td class="col-location">{{ cx_location(listing.storage_name or listing.location) }}</td>
+                    <td class="col-type">
                         <span class="badge badge-{{ listing.listing_type.value }}">
                             {{ listing.listing_type.value }}
                         </span>
                     </td>
-                    <td class="notes-cell" {% if listing.notes %}title="{{ listing.notes }}"{% endif %}>{{ listing.notes or '—' }}</td>
-                    <td>{{ listing.updated_at.strftime('%Y-%m-%d') }}</td>
+                    <td class="col-notes notes-cell" {% if listing.notes %}title="{{ listing.notes }}"{% endif %}>{{ listing.notes or '—' }}</td>
+                    <td class="col-updated">{{ listing.updated_at.strftime('%Y-%m-%d') }}</td>
                 </tr>
                 {% endfor %}
             </tbody>
@@ -96,29 +84,23 @@
         <table class="listings-table">
             <thead>
                 <tr>
-                    <th>Name</th>
-                    <th>Items</th>
-                    <th>Price</th>
-                    <th>Location</th>
-                    <th>Updated</th>
-                    <th></th>
+                    <th class="col-name">Name</th>
+                    <th class="col-items">Items</th>
+                    <th class="col-price">Price</th>
+                    <th class="col-location">Location</th>
+                    <th class="col-updated">Updated</th>
+                    <th class="col-actions"></th>
                 </tr>
             </thead>
             <tbody>
                 {% for bundle in bundles %}
                 <tr>
-                    <td><strong>{{ bundle.name }}</strong></td>
-                    <td>{{ bundle.items|length }}</td>
-                    <td>
-                        {% if bundle.price %}
-                            <span data-locale-number="{{ bundle.price }}" data-locale-suffix=" {{ bundle.currency or '' }}">{{ '{:,.0f}'.format(bundle.price) }} {{ bundle.currency or '' }}</span>
-                        {% else %}
-                            Contact me
-                        {% endif %}
-                    </td>
-                    <td>{{ bundle.location or '—' }}</td>
-                    <td>{{ bundle.updated_at.strftime('%Y-%m-%d') }}</td>
-                    <td>
+                    <td class="col-name"><strong>{{ bundle.name }}</strong></td>
+                    <td class="col-items">{{ bundle.items|length }}</td>
+                    <td class="col-price">{{ bundle_price_display(bundle) }}</td>
+                    <td class="col-location">{{ cx_location(bundle.location) }}</td>
+                    <td class="col-updated">{{ bundle.updated_at.strftime('%Y-%m-%d') }}</td>
+                    <td class="col-actions">
                         <button class="btn btn-sm btn-secondary"
                                 hx-get="/bundles/{{ bundle.id }}/detail"
                                 hx-target="#modal-container"

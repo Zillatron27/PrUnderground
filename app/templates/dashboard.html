@@ -1,4 +1,5 @@
 {% extends "base.html" %}
+{% from "macros/responsive.html" import material_ticker, price_display, cx_location, bundle_price_display, bundle_quantity_display %}
 
 {% block content %}
 <div class="dashboard">
@@ -51,31 +52,31 @@
             <table class="listings-table">
                 <thead>
                     <tr>
-                        <th>Material</th>
-                        <th>Quantity</th>
-                        <th>Price</th>
-                        <th>Location</th>
-                        <th>Type</th>
-                        <th>Notes</th>
-                        <th>Updated</th>
-                        <th>Actions</th>
+                        <th class="col-material">Material</th>
+                        <th class="col-quantity">Qty</th>
+                        <th class="col-price">Price</th>
+                        <th class="col-location">Location</th>
+                        <th class="col-type">Type</th>
+                        <th class="col-notes">Notes</th>
+                        <th class="col-updated">Updated</th>
+                        <th class="col-actions">Actions</th>
                     </tr>
                 </thead>
                 <tbody id="inventory-tbody" hx-get="/api/dashboard/inventory" hx-trigger="load, fioRefresh from:body" hx-swap="innerHTML">
                     {% for listing in listings %}
                     {% set is_expired = listing.expires_at and listing.expires_at < now %}
                     <tr class="{% if is_expired %}listing-expired{% endif %}">
-                        <td><strong>{{ listing.material_ticker }}</strong></td>
-                        <td>
+                        <td class="col-material">{{ material_ticker(listing.material_ticker) }}</td>
+                        <td class="col-quantity">
                             {% if listing.quantity %}
                                 {{ listing.quantity }}
                             {% else %}
                                 <span class="fio-loading-inline"><span class="spinner-data spinner-sm"></span></span>
                             {% endif %}
                         </td>
-                        <td>{{ format_price(listing) }}</td>
-                        <td>{{ listing.storage_name or listing.location or '—' }}</td>
-                        <td>
+                        <td class="col-price">{{ price_display(listing) }}</td>
+                        <td class="col-location">{{ cx_location(listing.storage_name or listing.location) }}</td>
+                        <td class="col-type">
                             <span class="badge badge-{{ listing.listing_type.value }}">
                                 {{ listing.listing_type.value }}
                             </span>
@@ -83,17 +84,17 @@
                                 {% if is_expired %}
                                 <span class="badge badge-expired">Expired</span>
                                 {% else %}
-                                <span class="expiry-info">
+                                <span class="expiry-info hide-narrow">
                                     expires {{ listing.expires_at.strftime('%d %b') }}
                                 </span>
                                 {% endif %}
                             {% endif %}
                         </td>
-                        <td class="notes-cell" {% if listing.notes %}title="{{ listing.notes }}"{% endif %}>
+                        <td class="col-notes notes-cell" {% if listing.notes %}title="{{ listing.notes }}"{% endif %}>
                             {{ listing.notes or '—' }}
                         </td>
-                        <td>{{ listing.updated_at.strftime('%Y-%m-%d') }}</td>
-                        <td class="actions">
+                        <td class="col-updated">{{ listing.updated_at.strftime('%Y-%m-%d') }}</td>
+                        <td class="col-actions actions">
                             <a href="/listings/{{ listing.id }}/edit" class="btn btn-sm">Edit</a>
                             <form action="/listings/{{ listing.id }}/delete" method="post" style="display:inline">
                                 <input type="hidden" name="{{ csrf_field_name }}" value="{{ csrf_token }}">
@@ -123,38 +124,26 @@
         <table class="listings-table">
             <thead>
                 <tr>
-                    <th>Name</th>
-                    <th>Items</th>
-                    <th>Qty</th>
-                    <th>Price</th>
-                    <th>Location</th>
-                    <th>Type</th>
-                    <th>Updated</th>
-                    <th>Actions</th>
+                    <th class="col-name">Name</th>
+                    <th class="col-items">Items</th>
+                    <th class="col-quantity">Qty</th>
+                    <th class="col-price">Price</th>
+                    <th class="col-location">Location</th>
+                    <th class="col-type">Type</th>
+                    <th class="col-updated">Updated</th>
+                    <th class="col-actions">Actions</th>
                 </tr>
             </thead>
             <tbody>
                 {% for bundle in bundles %}
                 {% set is_expired = bundle.expires_at and bundle.expires_at < now %}
                 <tr class="{% if is_expired %}listing-expired{% endif %}">
-                    <td><strong>{{ bundle.name }}</strong></td>
-                    <td>{{ bundle.items|length }}</td>
-                    <td>
-                        {% if bundle.quantity %}
-                            {{ bundle.quantity }}
-                        {% else %}
-                            —
-                        {% endif %}
-                    </td>
-                    <td>
-                        {% if bundle.price %}
-                            <span data-locale-number="{{ bundle.price }}" data-locale-suffix=" {{ bundle.currency or '' }}">{{ '{:,.0f}'.format(bundle.price) }} {{ bundle.currency or '' }}</span>
-                        {% else %}
-                            Contact me
-                        {% endif %}
-                    </td>
-                    <td>{{ bundle.location or '—' }}</td>
-                    <td>
+                    <td class="col-name"><strong>{{ bundle.name }}</strong></td>
+                    <td class="col-items">{{ bundle.items|length }}</td>
+                    <td class="col-quantity">{{ bundle_quantity_display(bundle) }}</td>
+                    <td class="col-price">{{ bundle_price_display(bundle) }}</td>
+                    <td class="col-location">{{ cx_location(bundle.location) }}</td>
+                    <td class="col-type">
                         <span class="badge badge-{{ bundle.listing_type.value }}">
                             {{ bundle.listing_type.value }}
                         </span>
@@ -162,14 +151,14 @@
                             {% if is_expired %}
                             <span class="badge badge-expired">Expired</span>
                             {% else %}
-                            <span class="expiry-info">
+                            <span class="expiry-info hide-narrow">
                                 expires {{ bundle.expires_at.strftime('%d %b') }}
                             </span>
                             {% endif %}
                         {% endif %}
                     </td>
-                    <td>{{ bundle.updated_at.strftime('%Y-%m-%d') }}</td>
-                    <td class="actions">
+                    <td class="col-updated">{{ bundle.updated_at.strftime('%Y-%m-%d') }}</td>
+                    <td class="col-actions actions">
                         <a href="/bundles/{{ bundle.id }}/edit" class="btn btn-sm">Edit</a>
                         <form action="/bundles/{{ bundle.id }}/delete" method="post" style="display:inline">
                             <input type="hidden" name="{{ csrf_field_name }}" value="{{ csrf_token }}">

@@ -104,17 +104,6 @@ async def frame_headers(request: Request, call_next):
     )
     return response
 
-# DEBUG: Check what headers Cloudflare sends (remove after testing)
-@app.get("/debug/headers")
-async def debug_headers(request: Request):
-    headers = dict(request.headers)
-    return {
-        "scheme": request.url.scheme,
-        "x-forwarded-proto": headers.get("x-forwarded-proto"),
-        "cf-visitor": headers.get("cf-visitor"),
-        "all_headers": headers,
-    }
-
 # Mount static files
 app.mount("/static", StaticFiles(directory="app/static"), name="static")
 

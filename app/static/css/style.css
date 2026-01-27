@@ -242,6 +242,8 @@ body.loading #global-spinner::after {
 /* Limit table width on very wide screens */
 .listings-table {
     max-width: 1200px;
+    margin-left: auto;
+    margin-right: auto;
 }
 
 /* ========================================
@@ -2232,6 +2234,14 @@ html.force-desktop .nav-links {
         height: 34px;
         display: flex;
         align-items: center;
+    }
+}
+
+/* Desktop tier: >986px - explicit container constraint */
+@media (min-width: 987px) {
+    .container {
+        max-width: 1200px;
+        margin: 0 auto;
     }
 }
 

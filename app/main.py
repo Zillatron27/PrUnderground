@@ -8,6 +8,7 @@ load_dotenv()
 from fastapi import FastAPI, Request, Depends
 from fastapi.staticfiles import StaticFiles
 from fastapi.responses import HTMLResponse, PlainTextResponse, Response
+from uvicorn.middleware.proxy_headers import ProxyHeadersMiddleware
 from sqlalchemy.orm import Session
 from slowapi import Limiter
 from slowapi.util import get_remote_address
@@ -73,8 +74,10 @@ app = FastAPI(
     description="Community trade coordination for Prosperous Universe",
     version=__version__,
     lifespan=lifespan,
-    redirect_slashes=False,  # Avoid http:// redirects behind Cloudflare proxy
 )
+
+# Trust proxy headers from Cloudflare tunnel for correct HTTPS redirects
+app.add_middleware(ProxyHeadersMiddleware, trusted_hosts=["*"])
 
 # Make version and helpers available to all templates
 templates.env.globals["app_version"] = __version__

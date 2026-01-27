@@ -1,5 +1,5 @@
 {% extends "base.html" %}
-{% from "macros/responsive.html" import material_ticker, price_display, cx_location, bundle_price_display, bundle_quantity_display %}
+{% from "macros/responsive.html" import material_ticker, price_display, cx_location, bundle_price_display, bundle_quantity_display, date_display %}
 
 {% block content %}
 <div class="dashboard">
@@ -52,10 +52,10 @@
             <table class="listings-table">
                 <thead>
                     <tr>
-                        <th class="col-material">Material</th>
+                        <th class="col-material"><span class="hide-medium">Material</span><span class="show-medium">Mat</span></th>
                         <th class="col-quantity">Qty</th>
                         <th class="col-price">Price</th>
-                        <th class="col-location">Location</th>
+                        <th class="col-location"><span class="hide-medium">Location</span><span class="show-medium">Loc</span></th>
                         <th class="col-type">Type</th>
                         <th class="col-notes">Notes</th>
                         <th class="col-updated">Updated</th>
@@ -84,7 +84,7 @@
                                 {% if is_expired %}
                                 <span class="badge badge-expired">Expired</span>
                                 {% else %}
-                                <span class="expiry-info hide-narrow">
+                                <span class="expiry-info hide-medium">
                                     expires {{ listing.expires_at.strftime('%d %b') }}
                                 </span>
                                 {% endif %}
@@ -93,7 +93,7 @@
                         <td class="col-notes notes-cell" {% if listing.notes %}title="{{ listing.notes }}"{% endif %}>
                             {{ listing.notes or '—' }}
                         </td>
-                        <td class="col-updated">{{ listing.updated_at.strftime('%Y-%m-%d') }}</td>
+                        <td class="col-updated">{{ date_display(listing.updated_at) }}</td>
                         <td class="col-actions actions">
                             <a href="/listings/{{ listing.id }}/edit" class="btn btn-sm">Edit</a>
                             <form action="/listings/{{ listing.id }}/delete" method="post" style="display:inline">
@@ -128,7 +128,7 @@
                     <th class="col-items">Items</th>
                     <th class="col-quantity">Qty</th>
                     <th class="col-price">Price</th>
-                    <th class="col-location">Location</th>
+                    <th class="col-location"><span class="hide-medium">Location</span><span class="show-medium">Loc</span></th>
                     <th class="col-type">Type</th>
                     <th class="col-updated">Updated</th>
                     <th class="col-actions">Actions</th>
@@ -151,13 +151,13 @@
                             {% if is_expired %}
                             <span class="badge badge-expired">Expired</span>
                             {% else %}
-                            <span class="expiry-info hide-narrow">
+                            <span class="expiry-info hide-medium">
                                 expires {{ bundle.expires_at.strftime('%d %b') }}
                             </span>
                             {% endif %}
                         {% endif %}
                     </td>
-                    <td class="col-updated">{{ bundle.updated_at.strftime('%Y-%m-%d') }}</td>
+                    <td class="col-updated">{{ date_display(bundle.updated_at) }}</td>
                     <td class="col-actions actions">
                         <a href="/bundles/{{ bundle.id }}/edit" class="btn btn-sm">Edit</a>
                         <form action="/bundles/{{ bundle.id }}/delete" method="post" style="display:inline">

@@ -56,8 +56,8 @@
     --space-2xl: 48px;
 
     /* Responsive breakpoints */
-    --bp-narrow: 450px;
-    --bp-medium: 720px;
+    --bp-narrow: 540px;
+    --bp-medium: 723px;
 
     /* Legacy aliases for compatibility */
     --color-bg: var(--bg-primary);
@@ -233,19 +233,15 @@ body.loading #global-spinner::after {
    Container
    ======================================== */
 .container {
-    max-width: 1200px;
-    margin: 0 auto;
+    max-width: 100%;
+    margin: 0;
     padding: var(--space-lg);
     flex: 1;
-    container-type: inline-size;
 }
 
-/* Container query setup for responsive components */
-.table-wrapper,
-.filter-form,
-.listing-form,
-.navbar {
-    container-type: inline-size;
+/* Limit table width on very wide screens */
+.listings-table {
+    max-width: 1200px;
 }
 
 /* ========================================
@@ -396,6 +392,7 @@ table tbody tr:hover {
     padding: var(--space-sm) var(--space-sm);
     border-bottom: 1px solid var(--border-subtle);
     color: var(--text-primary);
+    vertical-align: middle;
 }
 
 /* Zebra striping for listings table */
@@ -518,6 +515,7 @@ table tbody tr:hover {
 .listings-table .actions {
     display: flex;
     gap: var(--space-xs);
+    align-items: center;
 }
 
 /* Material tickers in tables */
@@ -1248,7 +1246,7 @@ table tbody tr:hover {
    Form Page (Listing create/edit)
    ======================================== */
 .form-page {
-    max-width: 600px;
+    max-width: 450px;
     margin: 0 auto;
 }
 
@@ -1264,7 +1262,6 @@ table tbody tr:hover {
     background: var(--bg-secondary);
     padding: var(--space-md);
     border: 1px solid var(--border-subtle);
-    container-type: inline-size;
 }
 
 .price-fields {
@@ -1349,7 +1346,7 @@ table tbody tr:hover {
 
 /* ========================================
    Responsive - Three-tier system
-   Narrow: <=450px, Medium: 451-720px, Desktop: >720px
+   Narrow: <=540px, Medium: 541-723px, Desktop: >723px
    Uses container queries with media query fallbacks
    ======================================== */
 
@@ -1447,10 +1444,20 @@ html.force-desktop .nav-links {
     display: none;
 }
 
+/* Hide at medium and below (≤723px) */
+.hide-medium {
+    display: initial;
+}
+
+/* Show at medium and below (≤723px) */
+.show-medium {
+    display: none;
+}
+
 /* ----------------------------------------
    Media Query Fallbacks (for browsers without container query support)
    ---------------------------------------- */
-@media (max-width: 720px) {
+@media (max-width: 723px) {
     /* Show hamburger menu */
     .nav-toggle-label {
         display: flex;
@@ -1566,15 +1573,14 @@ html.force-desktop .nav-links {
     }
 }
 
-@media (max-width: 450px) {
+@media (max-width: 540px) {
     /* Narrow tier */
     .container {
-        padding: var(--space-sm);
+        padding: var(--space-xs);
     }
 
     /* Hide columns at narrow */
-    .col-notes,
-    .col-updated {
+    .col-notes {
         display: none;
     }
 
@@ -1597,6 +1603,15 @@ html.force-desktop .nav-links {
         display: initial !important;
     }
 
+    /* Medium helpers also apply at narrow */
+    .hide-medium {
+        display: none !important;
+    }
+
+    .show-medium {
+        display: initial !important;
+    }
+
     /* Form actions stack */
     .form-actions {
         flex-direction: column;
@@ -1604,6 +1619,7 @@ html.force-desktop .nav-links {
 
     .form-actions .btn {
         width: 100%;
+        text-align: center;
     }
 
     /* Table action buttons */
@@ -1627,39 +1643,27 @@ html.force-desktop .nav-links {
         flex-direction: column;
         gap: var(--space-xs);
     }
-}
 
-/* ----------------------------------------
-   Container Queries (modern browsers)
-   ---------------------------------------- */
-@supports (container-type: inline-size) {
-    /* Filter form reflow */
-    @container (max-width: 720px) {
-        .filter-row {
-            flex-direction: column;
-            gap: var(--space-sm);
-        }
-
-        .filter-group {
-            width: 100%;
-        }
-
-        .filter-actions {
-            width: 100%;
-        }
+    /* Hide updated column at narrow - FIO status bar shows freshness */
+    .col-updated {
+        display: none;
     }
 
-    /* Form field reflow */
-    @container (max-width: 450px) {
-        .form-row {
-            flex-direction: column;
-        }
+    /* Tighter padding on browse page elements */
+    .filter-form {
+        padding: var(--space-sm);
+    }
 
-        .form-row .form-group {
-            width: 100%;
-        }
+    .browse-page {
+        padding: 0;
+    }
+
+    /* Tables fill available width */
+    .listings-table {
+        width: 100%;
     }
 }
+
 
 /* ----------------------------------------
    Sticky Table Header
@@ -1677,7 +1681,7 @@ html.force-desktop .nav-links {
 /* ----------------------------------------
    Form Reflow at Narrow
    ---------------------------------------- */
-@media (max-width: 450px) {
+@media (max-width: 540px) {
     /* Listing form: CX relative fields stack */
     #price-cx-fields {
         flex-direction: column;
@@ -1705,6 +1709,45 @@ html.force-desktop .nav-links {
         flex: 0 0 auto;
     }
 
+    /* Bundle items: Material full width, Qty + Remove on same row */
+    .bundle-item-row .form-row {
+        display: grid;
+        grid-template-columns: 1fr auto;
+        gap: 6px;
+    }
+
+    .bundle-item-row .form-group:first-child {
+        grid-column: 1 / -1;
+        margin-bottom: 0;
+    }
+
+    .bundle-item-row .form-group:nth-child(2) {
+        flex: 1;
+    }
+
+    .bundle-item-row .form-group:last-child {
+        flex: 0;
+        display: flex;
+        align-items: flex-end;
+    }
+
+    .bundle-item-row .btn-danger {
+        white-space: nowrap;
+    }
+
+    /* Space between item rows */
+    .bundle-item-row {
+        margin-bottom: 12px;
+        padding-bottom: 12px;
+        border-bottom: 1px solid var(--border-subtle);
+    }
+
+    /* Add Item button full width, below items */
+    #add-item-btn {
+        width: 100%;
+        margin-top: 8px;
+    }
+
     /* Price fields in bundle form */
     #bundle-price-fields {
         flex-direction: column;
@@ -1727,28 +1770,468 @@ html.force-desktop .nav-links {
 /* ----------------------------------------
    Column Visibility at Narrow
    ---------------------------------------- */
-@media (max-width: 450px) {
+@media (max-width: 540px) {
+    /* Hide non-essential columns at narrow width */
     .col-notes,
-    .col-updated {
+    .col-items {
         display: none;
+        width: 0;
+        padding: 0 !important;
+        border: 0;
     }
 
-    /* Truncate seller on narrow */
-    .col-seller {
-        max-width: 80px;
-        overflow: hidden;
-        text-overflow: ellipsis;
+    /* APEX-style ultra-compact table */
+    .listings-table {
+        font-size: 10px;
+    }
+
+    /* Bundles table should fill width */
+    .profile-bundles .listings-table,
+    .my-bundles .listings-table {
+        width: 100%;
+    }
+
+    .listings-table th,
+    .listings-table td {
+        padding: 2px 4px;
+        line-height: 1.2;
         white-space: nowrap;
+    }
+
+    .listings-table th {
+        font-size: 9px;
+    }
+
+    /* Override min-width on qty-cell for narrow */
+    .qty-cell {
+        min-width: 0;
+    }
+
+    /* Move button to align with section edge */
+    .profile-bundles .col-actions .btn,
+    .my-bundles .col-actions .btn {
+        margin-right: -4px;
+    }
+
+    /* Full-width container, minimal padding */
+    .container {
+        padding: 4px;
+        max-width: 100%;
+        margin: 0;
+    }
+
+    /* Remove body margins */
+    body {
+        margin: 0;
+    }
+
+    /* Ultra-tight sections */
+    .my-listings,
+    .my-bundles,
+    .profile-listings,
+    .profile-bundles,
+    .filter-form,
+    .suggestions,
+    .discord-export {
+        padding: 6px;
+        margin: 0 0 6px 0;
+        border-width: 1px;
+    }
+
+    /* Browse page - match dashboard styling */
+    .browse-page {
+        margin: 0;
+        padding: 0;
+    }
+
+    .browse-page h1 {
+        margin-bottom: 6px;
+    }
+
+    .browse-page .browse-tabs {
+        margin-bottom: 6px;
+    }
+
+    .browse-page .filter-form {
+        margin-bottom: 6px;
+    }
+
+    .browse-page .sort-builder {
+        margin-bottom: 6px;
+    }
+
+    .browse-page .listings-table {
+        width: 100%;
+    }
+
+    /* Minimal section headers */
+    .my-listings h2,
+    .my-bundles h2,
+    .profile-listings h2,
+    .profile-bundles h2,
+    .suggestions h2,
+    .discord-export h2 {
+        margin-bottom: 4px;
+        padding-bottom: 4px;
+        font-size: 10px;
+    }
+
+    /* Compact headings */
+    h1 {
+        font-size: var(--text-base);
+        margin-bottom: 6px;
+    }
+
+    h2 {
+        font-size: 11px;
+    }
+
+    /* Minimal dashboard/profile headers */
+    .dashboard-header,
+    .profile-header {
+        margin-bottom: 6px;
+        padding-bottom: 6px;
+        gap: 4px;
+    }
+
+    .company-info,
+    .company-name,
+    .member-since {
+        font-size: 9px;
+        margin-bottom: 0;
+    }
+
+    /* Compact buttons */
+    .dashboard-actions,
+    .profile-actions {
+        gap: 4px;
+    }
+
+    .btn {
+        padding: 4px 8px;
+        font-size: 10px;
+    }
+
+    .btn-sm {
+        padding: 2px 6px;
+        font-size: 9px;
+    }
+
+    /* Compact badges */
+    .badge {
+        padding: 1px 4px;
+        font-size: 9px;
+    }
+
+    /* Compact filter form */
+    .filter-form {
+        padding: 6px;
+    }
+
+    .filter-row {
+        gap: 4px;
+    }
+
+    .filter-group {
+        gap: 2px;
+    }
+
+    .filter-group label {
+        font-size: 9px;
+    }
+
+    .filter-group input,
+    .filter-group select {
+        padding: 4px;
+        font-size: 11px;
+    }
+
+    /* Filter actions full width */
+    .filter-actions {
+        flex-direction: column;
+        width: 100%;
+    }
+
+    .filter-actions .btn {
+        width: 100%;
+        text-align: center;
+    }
+
+    /* Minimal form spacing */
+    .form-group {
+        margin-bottom: 8px;
+    }
+
+    .form-group label {
+        font-size: 9px;
+        margin-bottom: 2px;
+    }
+
+    .form-group input,
+    .form-group select,
+    .form-group textarea {
+        padding: 4px 6px;
+        font-size: 11px;
+    }
+
+    /* Compact FIO status */
+    .fio-status-bar {
+        margin-bottom: 4px;
+        font-size: 9px;
+        padding: 2px 0;
+    }
+
+    /* Tighter browse tabs */
+    .browse-tabs {
+        margin-bottom: 6px;
+    }
+
+    .browse-tab {
+        padding: 4px 8px;
+        font-size: 10px;
+    }
+
+    /* Compact sort builder */
+    .sort-builder {
+        padding: 4px 6px;
+        margin-bottom: 4px;
+    }
+
+    .sort-label {
+        font-size: 9px;
+    }
+
+    .sort-chip {
+        padding: 2px 6px;
+        font-size: 10px;
+    }
+
+    /* Compact navbar */
+    .navbar {
+        padding: 4px 8px;
+    }
+
+    .nav-brand a {
+        font-size: var(--text-sm);
+    }
+
+    /* Compact footer */
+    .footer {
+        padding: 4px 8px;
+        font-size: 9px;
+    }
+
+    /* Compact chips */
+    .chip {
+        padding: 2px 6px;
+        font-size: 10px;
+    }
+
+    /* Help text minimal */
+    .help-text {
+        font-size: 9px;
+        margin-top: 1px;
+        margin-bottom: 2px;
+    }
+
+    /* Table wrapper - no extra space, full width */
+    .table-wrapper {
+        margin: 0;
+        padding: 0;
+        overflow-x: hidden;
+    }
+
+    /* Actions column - horizontal layout, pushed right */
+    .actions {
+        display: flex;
+        flex-direction: row;
+        gap: 2px;
+        justify-content: flex-end;
+    }
+
+    td.col-actions {
+        text-align: right;
+    }
+
+    /* Hide "Actions" header text at narrow - buttons are self-explanatory */
+    th.col-actions {
+        font-size: 0;
+        padding-right: 4px;
+    }
+
+    .actions .btn {
+        width: auto;
+    }
+
+    /* Price display compact */
+    .price {
+        font-size: 10px;
+    }
+
+    /* Ticker compact */
+    .ticker {
+        font-size: 10px;
     }
 }
 
-@media (max-width: 720px) and (min-width: 451px) {
-    /* Medium: truncate notes */
+/* Wide-medium tier: 724px - 986px */
+@media (max-width: 986px) and (min-width: 724px) {
+    /* Container fills width */
+    .container {
+        max-width: 100%;
+        margin: 0;
+    }
+
+    /* Hide inventory breakdown - show only main qty */
+    .inventory-detail {
+        display: none;
+    }
+
+    /* Hide notes column */
     .col-notes {
-        max-width: 80px;
+        display: none;
+    }
+
+    /* Hide stock badges, show dots instead */
+    .badge-out-of-stock,
+    .badge-low-stock {
+        display: none;
+    }
+
+    .stock-dot {
+        display: inline-block;
+    }
+
+    /* Keep location abbreviated */
+    .col-location .hide-medium {
+        display: none !important;
+    }
+
+    .col-location .show-medium {
+        display: initial !important;
+    }
+}
+
+/* Medium tier: 541px - 723px */
+@media (max-width: 723px) and (min-width: 541px) {
+    /* Medium tier - mostly desktop styling, just hide non-essential columns
+       and use condensed display macros */
+
+    /* Slightly smaller table text at medium */
+    .listings-table {
+        font-size: 12px;
+    }
+
+    .listings-table th {
+        font-size: 11px;
+    }
+
+    .listings-table td {
+        line-height: 1;
+    }
+
+    /* Override min-width on qty-cell */
+    .qty-cell {
+        min-width: 0;
+    }
+
+    /* Hide inventory breakdown - show only main qty */
+    .inventory-detail {
+        display: none;
+    }
+
+    /* Hide non-essential columns */
+    .col-notes,
+    .col-items {
+        display: none;
+    }
+
+    /* Bundle name column - truncate to prevent tall rows */
+    .col-name {
+        max-width: 100px;
         overflow: hidden;
         text-overflow: ellipsis;
         white-space: nowrap;
+    }
+
+    /* Bundle price column - don't wrap */
+    .my-bundles .col-price,
+    .profile-bundles .col-price {
+        white-space: nowrap;
+    }
+
+    /* Hide UPDATED column at medium to save space */
+    .col-updated {
+        display: none;
+        width: 0;
+        padding: 0 !important;
+        border: 0;
+    }
+
+    /* Ensure tables fit within container */
+    .listings-table {
+        width: 100%;
+    }
+
+    .table-wrapper {
+        overflow-x: auto;
+    }
+
+    /* Slightly reduce container padding, ensure it fits viewport */
+    .container {
+        padding: var(--space-md);
+        max-width: 100%;
+        margin: 0;
+    }
+
+    /* Section padding */
+    .my-listings,
+    .my-bundles,
+    .profile-listings,
+    .profile-bundles,
+    .filter-form,
+    .suggestions,
+    .discord-export {
+        padding: var(--space-sm);
+    }
+
+    /* Profile bundles - align VIEW button with section edge */
+    .profile-bundles .listings-table {
+        width: 100%;
+    }
+
+    .profile-bundles .col-actions {
+        text-align: right;
+    }
+
+    .profile-bundles .col-actions .btn {
+        margin-right: -8px;
+    }
+
+    /* Responsive helpers at medium */
+    .hide-medium {
+        display: none !important;
+    }
+
+    .show-medium {
+        display: initial !important;
+    }
+
+    /* Bundle form item rows - align Remove button with inputs */
+    .bundle-item-row .form-row {
+        align-items: flex-end;
+    }
+
+    .bundle-item-row .form-group:last-child {
+        display: flex;
+        align-items: flex-end;
+        padding-bottom: 1px;
+    }
+
+    .bundle-item-row .btn-danger {
+        height: 34px;
+        display: flex;
+        align-items: center;
     }
 }
 

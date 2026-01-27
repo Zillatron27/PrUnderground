@@ -1,4 +1,4 @@
-{% from "macros/responsive.html" import material_ticker, price_display, cx_location %}
+{% from "macros/responsive.html" import material_ticker, price_display, cx_location, date_display, dashboard_qty %}
 {% for listing in listings %}
 {% set is_expired = listing.expires_at and listing.expires_at < now %}
 <tr class="{% if is_expired %}listing-expired{% endif %}" data-listing-id="{{ listing.id }}">
@@ -19,12 +19,12 @@
                 {% set stock_status = 'low' %}
             {% endif %}
             <span class="live-inventory {{ qty_class }}" title="{{ inv.actual }} in stock - {{ inv.reserve }} reserved">
-                {{ inv.available }}
-                <small class="inventory-detail hide-narrow">({{ inv.actual }} - {{ inv.reserve }})</small>
+                {{ dashboard_qty(inv.available) }}
+                <small class="inventory-detail hide-medium">({{ inv.actual }} - {{ inv.reserve }})</small>
             </span>
             {% if stock_badge %}
-                <span class="badge badge-{% if inv.available == 0 %}out-of-stock{% else %}low-stock{% endif %} hide-narrow">{{ stock_badge }}</span>
-                <span class="stock-dot stock-{{ stock_status }} show-narrow" title="{{ stock_badge }}"></span>
+                <span class="badge badge-{% if inv.available == 0 %}out-of-stock{% else %}low-stock{% endif %} hide-medium">{{ stock_badge }}</span>
+                <span class="stock-dot stock-{{ stock_status }} show-medium" title="{{ stock_badge }}"></span>
             {% endif %}
         {% elif listing.quantity %}
             {{ listing.quantity }}
@@ -42,7 +42,7 @@
             {% if is_expired %}
             <span class="badge badge-expired">Expired</span>
             {% else %}
-            <span class="expiry-info hide-narrow">
+            <span class="expiry-info hide-medium">
                 expires {{ listing.expires_at.strftime('%d %b') }}
             </span>
             {% endif %}
@@ -51,7 +51,7 @@
     <td class="col-notes notes-cell" {% if listing.notes %}title="{{ listing.notes }}"{% endif %}>
         {{ listing.notes or '—' }}
     </td>
-    <td class="col-updated">{{ listing.updated_at.strftime('%Y-%m-%d') }}</td>
+    <td class="col-updated">{{ date_display(listing.updated_at) }}</td>
     <td class="col-actions actions">
         <a href="/listings/{{ listing.id }}/edit" class="btn btn-sm">Edit</a>
         <form action="/listings/{{ listing.id }}/delete" method="post" style="display:inline">

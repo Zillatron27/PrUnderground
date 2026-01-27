@@ -144,5 +144,5 @@ def render_template(request: Request, template_name: str, context: dict, status_
     context["chrome_visible"] = display_ctx["chrome_visible"]
 
     response = templates.TemplateResponse(template_name, context, status_code=status_code)
-    set_csrf_cookie(response, csrf_token)
+    set_csrf_cookie(response, csrf_token, request)
     return response

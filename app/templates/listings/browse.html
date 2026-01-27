@@ -1,5 +1,5 @@
 {% extends "base.html" %}
-{% from "macros/responsive.html" import seller_display, material_ticker, quantity_display, cx_location, price_display %}
+{% from "macros/responsive.html" import seller_display, material_ticker, quantity_display, cx_location, price_display, date_display %}
 
 {% block content %}
 <div class="browse-page">
@@ -104,7 +104,7 @@
                 <td class="col-price">{{ price_display(listing) }}</td>
                 <td class="col-location">{{ cx_location(listing.storage_name or listing.location) }}</td>
                 <td class="col-notes notes-cell" {% if listing.notes %}title="{{ listing.notes }}"{% endif %}>{{ listing.notes or '—' }}</td>
-                <td class="col-updated">{{ listing.updated_at.strftime('%Y-%m-%d') }}</td>
+                <td class="col-updated">{{ date_display(listing.updated_at) }}</td>
             </tr>
             {% endfor %}
         </tbody>

@@ -1,5 +1,5 @@
 {% extends "base.html" %}
-{% from "macros/responsive.html" import material_ticker, quantity_display, price_display, cx_location, bundle_price_display %}
+{% from "macros/responsive.html" import material_ticker, quantity_display, price_display, cx_location, bundle_price_display, date_display %}
 
 {% block content %}
 <div class="profile-page">
@@ -64,7 +64,7 @@
                         </span>
                     </td>
                     <td class="col-notes notes-cell" {% if listing.notes %}title="{{ listing.notes }}"{% endif %}>{{ listing.notes or '—' }}</td>
-                    <td class="col-updated">{{ listing.updated_at.strftime('%Y-%m-%d') }}</td>
+                    <td class="col-updated">{{ date_display(listing.updated_at) }}</td>
                 </tr>
                 {% endfor %}
             </tbody>
@@ -89,7 +89,7 @@
                     <th class="col-price">Price</th>
                     <th class="col-location">Location</th>
                     <th class="col-updated">Updated</th>
-                    <th class="col-actions"></th>
+                    <th class="col-actions">&nbsp;</th>
                 </tr>
             </thead>
             <tbody>
@@ -99,7 +99,7 @@
                     <td class="col-items">{{ bundle.items|length }}</td>
                     <td class="col-price">{{ bundle_price_display(bundle) }}</td>
                     <td class="col-location">{{ cx_location(bundle.location) }}</td>
-                    <td class="col-updated">{{ bundle.updated_at.strftime('%Y-%m-%d') }}</td>
+                    <td class="col-updated">{{ date_display(bundle.updated_at) }}</td>
                     <td class="col-actions">
                         <button class="btn btn-sm btn-secondary"
                                 hx-get="/bundles/{{ bundle.id }}/detail"

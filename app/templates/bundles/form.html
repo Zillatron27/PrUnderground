@@ -26,51 +26,52 @@
             <p class="help-text error-text" id="items-error" style="display: none;">Please add at least one item to the bundle</p>
         </div>
 
-        <div id="bundle-items-container">
-            {% if bundle and bundle.items %}
-                {% for item in bundle.items %}
-                <div class="bundle-item-row" data-index="{{ loop.index0 }}">
-                    <div class="form-row">
-                        <div class="form-group">
-                            <input type="text" name="item_ticker_{{ loop.index0 }}"
-                                   value="{{ item.material_ticker }}"
-                                   required maxlength="10" placeholder="Material"
-                                   list="material-list">
-                        </div>
-                        <div class="form-group">
-                            <input type="number" name="item_qty_{{ loop.index0 }}"
-                                   value="{{ item.quantity }}"
-                                   min="1" required placeholder="Qty">
-                        </div>
-                        <div class="form-group">
-                            <button type="button" class="btn btn-sm btn-danger" onclick="removeItemRow(this)">Remove</button>
-                        </div>
-                    </div>
-                </div>
-                {% endfor %}
-            {% else %}
-                <div class="bundle-item-row" data-index="0">
-                    <div class="form-row">
-                        <div class="form-group">
-                            <input type="text" name="item_ticker_0"
-                                   required maxlength="10" placeholder="Material"
-                                   list="material-list">
-                        </div>
-                        <div class="form-group">
-                            <input type="number" name="item_qty_0"
-                                   min="1" value="1" required placeholder="Qty">
-                        </div>
-                        <div class="form-group">
-                            <button type="button" class="btn btn-sm btn-danger" onclick="removeItemRow(this)">Remove</button>
+        <div class="bundle-items-wrapper">
+            <div id="bundle-items-container">
+                {% if bundle and bundle.items %}
+                    {% for item in bundle.items %}
+                    <div class="bundle-item-row" data-index="{{ loop.index0 }}">
+                        <div class="form-row">
+                            <div class="form-group">
+                                <input type="text" name="item_ticker_{{ loop.index0 }}"
+                                       value="{{ item.material_ticker }}"
+                                       required maxlength="10" placeholder="Material"
+                                       list="material-list">
+                            </div>
+                            <div class="form-group">
+                                <input type="number" name="item_qty_{{ loop.index0 }}"
+                                       value="{{ item.quantity }}"
+                                       min="1" required placeholder="Qty">
+                            </div>
+                            <div class="form-group">
+                                <button type="button" class="btn btn-sm btn-danger" onclick="removeItemRow(this)">Remove</button>
+                            </div>
                         </div>
                     </div>
-                </div>
-            {% endif %}
+                    {% endfor %}
+                {% else %}
+                    <div class="bundle-item-row" data-index="0">
+                        <div class="form-row">
+                            <div class="form-group">
+                                <input type="text" name="item_ticker_0"
+                                       required maxlength="10" placeholder="Material"
+                                       list="material-list">
+                            </div>
+                            <div class="form-group">
+                                <input type="number" name="item_qty_0"
+                                       min="1" value="1" required placeholder="Qty">
+                            </div>
+                            <div class="form-group">
+                                <button type="button" class="btn btn-sm btn-danger" onclick="removeItemRow(this)">Remove</button>
+                            </div>
+                        </div>
+                    </div>
+                {% endif %}
+            </div>
+            <button type="button" class="btn btn-secondary" onclick="addItemRow()" id="add-item-btn">+ Add Item</button>
         </div>
         <datalist id="material-list" hx-get="/listings/api/materials" hx-trigger="load" hx-swap="innerHTML">
         </datalist>
-
-        <button type="button" class="btn btn-secondary" onclick="addItemRow()" id="add-item-btn">+ Add Item</button>
 
         <hr class="form-divider">
 

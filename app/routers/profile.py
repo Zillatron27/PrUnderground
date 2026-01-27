@@ -1,21 +1,17 @@
 from datetime import datetime
 from fastapi import APIRouter, Depends, HTTPException, Request
 from fastapi.responses import HTMLResponse, PlainTextResponse
-from fastapi.templating import Jinja2Templates
 from sqlalchemy.orm import Session
 from sqlalchemy import or_
 
 from ..database import get_db
 from ..models import User, Listing, Bundle
-from ..utils import format_price, get_stock_status
+from ..utils import format_price
 from ..services.fio_sync import get_sync_staleness
+from ..template_utils import templates, render_template
 from .auth import get_current_user
 
 router = APIRouter()
-templates = Jinja2Templates(directory="app/templates")
-templates.env.globals["format_price"] = format_price
-templates.env.globals["get_stock_status"] = get_stock_status
-templates.env.globals["get_sync_staleness"] = get_sync_staleness
 
 
 @router.get("/{username}", response_class=HTMLResponse)
@@ -46,7 +42,8 @@ async def public_profile(
     )
     current_user = get_current_user(request, db)
 
-    return templates.TemplateResponse(
+    return render_template(
+        request,
         "profile/public.html",
         {
             "request": request,
@@ -55,7 +52,6 @@ async def public_profile(
             "listings": listings,
             "bundles": bundles,
             "current_user": current_user,
-            "format_price": format_price,
         },
     )
 

@@ -2,6 +2,8 @@
 CSRF Protection
 
 Provides CSRF token generation and validation for form submissions.
+Supports both cookie-based CSRF (standard) and origin-based fallback
+for cross-origin iframe embeds (e.g., Refined PrUn's XIT WEB command).
 """
 
 import os
@@ -19,7 +21,29 @@ CSRF_TOKEN_MAX_AGE = 2 * 60 * 60  # 2 hours in seconds
 CSRF_COOKIE_NAME = "csrf_token"
 CSRF_FORM_FIELD = "csrf_token"
 
+# Allowed origins for cross-origin iframe embedding (Origin-based CSRF fallback)
+ALLOWED_EMBED_ORIGINS = {
+    "https://apex.prosperousuniverse.com",
+    "https://www.prosperousuniverse.com",
+    # Local development origins
+    "http://localhost:8000",
+    "http://127.0.0.1:8000",
+}
+
 csrf_serializer = URLSafeTimedSerializer(CSRF_SECRET, salt="csrf")
+
+
+def get_cookie_settings(request: Request) -> dict:
+    """
+    Return cookie settings based on request scheme.
+    HTTPS: SameSite=None + Secure (required for cross-origin iframe)
+    HTTP: SameSite=Lax (local development)
+    """
+    is_secure = request.url.scheme == "https"
+    return {
+        "samesite": "none" if is_secure else "lax",
+        "secure": is_secure,
+    }
 
 
 def generate_csrf_token() -> str:
@@ -64,20 +88,25 @@ def get_csrf_token(request: Request) -> str:
     return generate_csrf_token()
 
 
-def set_csrf_cookie(response, token: str):
+def set_csrf_cookie(response, token: str, request: Request):
     """Set the CSRF token cookie on a response."""
+    settings = get_cookie_settings(request)
     response.set_cookie(
         key=CSRF_COOKIE_NAME,
         value=token,
         httponly=True,
-        samesite="lax",
         max_age=CSRF_TOKEN_MAX_AGE,
+        **settings,  # samesite and secure
     )
 
 
 async def verify_csrf(request: Request, form_token: Optional[str] = None) -> bool:
     """
-    Verify CSRF token from form submission against cookie.
+    Verify CSRF token from form submission.
+
+    Standard flow: Validate cookie matches form token.
+    Cross-origin iframe fallback: When cookie is missing (SameSite prevents it),
+    validate Origin header against allowlist instead.
 
     Args:
         request: The FastAPI request
@@ -88,10 +117,6 @@ async def verify_csrf(request: Request, form_token: Optional[str] = None) -> boo
     """
     cookie_token = request.cookies.get(CSRF_COOKIE_NAME)
 
-    if not cookie_token:
-        logger.warning("CSRF cookie missing")
-        raise HTTPException(status_code=403, detail="CSRF validation failed - please refresh and try again")
-
     if not form_token:
         # Try to get from form data
         form_data = await request.form()
@@ -101,18 +126,27 @@ async def verify_csrf(request: Request, form_token: Optional[str] = None) -> boo
         logger.warning("CSRF form token missing")
         raise HTTPException(status_code=403, detail="CSRF validation failed - please refresh and try again")
 
-    # Validate both tokens are valid signed tokens
-    if not validate_csrf_token(cookie_token):
-        logger.warning("CSRF cookie token invalid")
-        raise HTTPException(status_code=403, detail="CSRF validation failed - please refresh and try again")
-
+    # Form token must always be valid (properly signed)
     if not validate_csrf_token(form_token):
         logger.warning("CSRF form token invalid")
         raise HTTPException(status_code=403, detail="CSRF validation failed - please refresh and try again")
 
-    # Tokens should match
-    if cookie_token != form_token:
-        logger.warning("CSRF token mismatch")
-        raise HTTPException(status_code=403, detail="CSRF validation failed - please refresh and try again")
+    if cookie_token:
+        # Standard flow: validate cookie matches form token
+        if not validate_csrf_token(cookie_token):
+            logger.warning("CSRF cookie token invalid")
+            raise HTTPException(status_code=403, detail="CSRF validation failed - please refresh and try again")
+
+        if cookie_token != form_token:
+            logger.warning("CSRF token mismatch")
+            raise HTTPException(status_code=403, detail="CSRF validation failed - please refresh and try again")
+    else:
+        # Cross-origin iframe fallback: validate Origin header
+        # This happens when embedded in APEX iframe (SameSite prevents cookie)
+        origin = request.headers.get("origin")
+        if origin not in ALLOWED_EMBED_ORIGINS:
+            logger.warning(f"CSRF cookie missing and origin '{origin}' not in allowlist")
+            raise HTTPException(status_code=403, detail="CSRF validation failed - please refresh and try again")
+        logger.debug(f"CSRF validated via Origin header: {origin}")
 
     return True

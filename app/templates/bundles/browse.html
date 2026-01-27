@@ -1,5 +1,5 @@
 {% extends "base.html" %}
-{% from "macros/responsive.html" import seller_display, cx_location, bundle_price_display, bundle_quantity_display %}
+{% from "macros/responsive.html" import seller_display, cx_location, bundle_price_display, bundle_quantity_display, date_display %}
 
 {% block content %}
 <div class="browse-page">
@@ -61,7 +61,7 @@
                 <td class="col-quantity">{{ bundle_quantity_display(bundle) }}</td>
                 <td class="col-price">{{ bundle_price_display(bundle) }}</td>
                 <td class="col-location">{{ cx_location(bundle.location) }}</td>
-                <td class="col-updated">{{ bundle.updated_at.strftime('%Y-%m-%d') }}</td>
+                <td class="col-updated">{{ date_display(bundle.updated_at) }}</td>
                 <td class="col-actions">
                     <button class="btn btn-sm btn-secondary"
                             hx-get="/bundles/{{ bundle.id }}/detail"

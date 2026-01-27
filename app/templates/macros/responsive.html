@@ -24,11 +24,11 @@
 {#
     Seller display with optional corp code
     Desktop: [CORP] Username
-    Narrow: Username only
+    Medium/Narrow: Username only
 #}
 {% macro seller_display(user) -%}
 <a href="/u/{{ user.fio_username }}">
-    {%- if user.company_code %}<span class="hide-narrow">[{{ user.company_code }}] </span>{% endif -%}
+    {%- if user.company_code %}<span class="hide-medium">[{{ user.company_code }}] </span>{% endif -%}
     {{ user.fio_username }}
 </a>
 {%- endmacro %}
@@ -36,12 +36,12 @@
 {#
     CX location display
     Desktop: Full name (Moria Station)
-    Narrow: Abbreviation (MOR)
+    Medium/Narrow: Abbreviation (MOR)
 #}
 {% macro cx_location(location) -%}
 {%- if location -%}
-    <span class="hide-narrow">{{ location }}</span>
-    <span class="show-narrow">{{ CX_ABBREV.get(location, location) }}</span>
+    <span class="hide-medium">{{ location }}</span>
+    <span class="show-medium">{{ CX_ABBREV.get(location, location) }}</span>
 {%- else -%}
     —
 {%- endif -%}
@@ -49,18 +49,16 @@
 
 {#
     Price display
-    Desktop: Full formatted price (1,500,000/u)
-    Narrow: Condensed (1.5m/u)
+    Desktop: Full formatted price (CX.NC1-10%, 1,500/u)
+    Medium/Narrow: Condensed (CX-10%, 1.5k/u)
 #}
 {% macro price_display(listing) -%}
-<span class="hide-narrow">{{ format_price(listing) }}</span>
-<span class="show-narrow">
-    {%- if listing.price -%}
-        {{ condense_number(listing.price) }}
-        {%- if listing.price_type and listing.price_type.value == 'per_unit' %}/u{% endif -%}
-        {%- if listing.currency %} {{ listing.currency }}{% endif -%}
-    {%- elif listing.cx_price_percent -%}
-        CX {{ '{:+.0f}'.format(listing.cx_price_percent) }}%
+<span class="hide-medium">{{ format_price(listing) }}</span>
+<span class="show-medium">
+    {%- if listing.price_type.value == 'absolute' and listing.price_value is not none -%}
+        {{ condense_number(listing.price_value) }}/u
+    {%- elif listing.price_type.value == 'cx_relative' and listing.price_value is not none -%}
+        CX{{ '{:+.0f}'.format(listing.price_value) }}{% if not listing.price_cx_is_absolute %}%{% endif %}
     {%- else -%}
         —
     {%- endif -%}
@@ -70,7 +68,7 @@
 {#
     Quantity display with stock status
     Desktop: Number + text badge (OUT OF STOCK, LOW STOCK)
-    Narrow: Number + color dot indicator
+    Medium/Narrow: Number + color dot indicator
 #}
 {% macro quantity_display(listing) -%}
 {%- set qty = listing.available_quantity if listing.available_quantity is not none else listing.quantity -%}
@@ -83,23 +81,23 @@
     {%- endif -%}
 </span>
 {%- if status == 'out' -%}
-    <span class="badge badge-out-of-stock hide-narrow">OUT OF STOCK</span>
-    <span class="stock-dot stock-out show-narrow" title="Out of stock"></span>
+    <span class="badge badge-out-of-stock hide-medium">OUT OF STOCK</span>
+    <span class="stock-dot stock-out show-medium" title="Out of stock"></span>
 {%- elif status == 'low' -%}
-    <span class="badge badge-low-stock hide-narrow">LOW STOCK</span>
-    <span class="stock-dot stock-low show-narrow" title="Low stock"></span>
+    <span class="badge badge-low-stock hide-medium">LOW STOCK</span>
+    <span class="stock-dot stock-low show-medium" title="Low stock"></span>
 {%- endif -%}
 {%- endmacro %}
 
 {#
     Bundle price display
     Desktop: Full formatted price
-    Narrow: Condensed
+    Medium/Narrow: Condensed
 #}
 {% macro bundle_price_display(bundle) -%}
 {%- if bundle.price -%}
-    <span class="hide-narrow">{{ '{:,.0f}'.format(bundle.price) }} {{ bundle.currency or '' }}</span>
-    <span class="show-narrow">{{ condense_number(bundle.price) }}{{ ' ' + bundle.currency if bundle.currency else '' }}</span>
+    <span class="hide-medium">{{ '{:,.0f}'.format(bundle.price) }} {{ bundle.currency or '' }}</span>
+    <span class="show-medium">{{ condense_number(bundle.price) }}{{ ' ' + bundle.currency if bundle.currency else '' }}</span>
 {%- else -%}
     Contact me
 {%- endif -%}
@@ -108,12 +106,12 @@
 {#
     Bundle quantity display
     Desktop: Full number with comma formatting
-    Narrow: Condensed
+    Medium/Narrow: Condensed
 #}
 {% macro bundle_quantity_display(bundle) -%}
 {%- if bundle.quantity -%}
-    <span class="hide-narrow">{{ '{:,}'.format(bundle.quantity) }}</span>
-    <span class="show-narrow">{{ condense_number(bundle.quantity) }}</span>
+    <span class="hide-medium">{{ '{:,}'.format(bundle.quantity) }}</span>
+    <span class="show-medium">{{ condense_number(bundle.quantity) }}</span>
 {%- else -%}
     —
 {%- endif -%}
@@ -121,10 +119,24 @@
 
 {#
     Date display
-    Desktop: YYYY-MM-DD
-    Narrow: MM-DD (current year assumed)
+    Desktop: DD-MM-YYYY
+    Medium/Narrow: DD Mon (e.g., 26 Jan)
 #}
 {% macro date_display(dt) -%}
-<span class="hide-narrow">{{ dt.strftime('%Y-%m-%d') }}</span>
-<span class="show-narrow">{{ dt.strftime('%m-%d') }}</span>
+<span class="hide-medium">{{ dt.strftime('%d-%m-%Y') }}</span>
+<span class="show-medium">{{ dt.strftime('%d %b') }}</span>
+{%- endmacro %}
+
+{#
+    Dashboard quantity display (for live inventory)
+    Desktop: Full number with comma formatting
+    Medium/Narrow: Condensed (184.6k)
+#}
+{% macro dashboard_qty(value) -%}
+{%- if value is not none -%}
+<span class="hide-medium">{{ '{:,}'.format(value) }}</span>
+<span class="show-medium">{{ condense_number(value) }}</span>
+{%- else -%}
+—
+{%- endif -%}
 {%- endmacro %}

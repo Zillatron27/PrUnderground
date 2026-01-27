@@ -73,6 +73,7 @@ app = FastAPI(
     description="Community trade coordination for Prosperous Universe",
     version=__version__,
     lifespan=lifespan,
+    redirect_slashes=False,  # Avoid http:// redirects behind Cloudflare proxy
 )
 
 # Make version and helpers available to all templates

@@ -38,8 +38,13 @@ def get_cookie_settings(request: Request) -> dict:
     Return cookie settings based on request scheme.
     HTTPS: SameSite=None + Secure (required for cross-origin iframe)
     HTTP: SameSite=Lax (local development)
+
+    Checks X-Forwarded-Proto header for requests behind reverse proxies
+    (e.g., Cloudflare Tunnel) where the internal connection is HTTP but
+    the client connection is HTTPS.
     """
-    is_secure = request.url.scheme == "https"
+    forwarded_proto = request.headers.get("x-forwarded-proto", "").lower()
+    is_secure = forwarded_proto == "https" or request.url.scheme == "https"
     return {
         "samesite": "none" if is_secure else "lax",
         "secure": is_secure,

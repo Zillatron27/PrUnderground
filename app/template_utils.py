@@ -1,11 +1,28 @@
 """Shared template rendering utilities."""
 
+import os
+from pathlib import Path
+
 from fastapi import Request
 from fastapi.templating import Jinja2Templates
 
 from .csrf import get_csrf_token, set_csrf_cookie, CSRF_FORM_FIELD
 from .utils import format_price, get_stock_status, is_sync_stale
 from .services.fio_sync import get_sync_staleness
+
+
+# Cache-busting: get static file modification times at startup
+STATIC_DIR = Path(__file__).parent / "static"
+
+
+def get_static_version(filename: str) -> str:
+    """Get file modification time as version string for cache-busting."""
+    filepath = STATIC_DIR / filename
+    try:
+        mtime = int(os.path.getmtime(filepath))
+        return str(mtime)
+    except OSError:
+        return "1"
 
 
 def condense_number(value: float | int | None) -> str:
@@ -131,6 +148,7 @@ templates.env.globals["is_sync_stale"] = is_sync_stale
 templates.env.globals["csrf_field_name"] = CSRF_FORM_FIELD
 templates.env.globals["condense_number"] = condense_number
 templates.env.globals["abbreviate_location"] = abbreviate_location
+templates.env.globals["static_version"] = get_static_version
 
 
 def render_template(request: Request, template_name: str, context: dict, status_code: int = 200):

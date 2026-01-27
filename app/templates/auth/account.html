@@ -66,8 +66,9 @@
             <input type="hidden" name="{{ csrf_field_name }}" value="{{ csrf_token }}">
             <div class="form-group">
                 <label for="fio_api_key">New API Key</label>
-                <input type="password" id="fio_api_key" name="fio_api_key" required
-                       placeholder="Paste your new API key">
+                <input type="text" id="fio_api_key" name="fio_api_key" required
+                       placeholder="Paste your new API key"
+                       autocomplete="off" autocapitalize="off" autocorrect="off" spellcheck="false">
             </div>
             <button type="submit" class="btn btn-primary">Update Key</button>
         </form>
@@ -158,15 +159,15 @@ document.getElementById('import-form').addEventListener('submit', async function
 
         if (response.ok) {
             resultDiv.className = 'import-result success';
-            resultDiv.innerHTML = `Import successful: ${result.added} added, ${result.updated} updated, ${result.skipped} skipped` +
+            resultDiv.textContent = `Import successful: ${result.added} added, ${result.updated} updated, ${result.skipped} skipped` +
                 (result.deleted > 0 ? `, ${result.deleted} deleted` : '');
         } else {
             resultDiv.className = 'import-result error';
-            resultDiv.innerHTML = `Import failed: ${result.detail || 'Unknown error'}`;
+            resultDiv.textContent = `Import failed: ${result.detail || 'Unknown error'}`;
         }
     } catch (err) {
         resultDiv.className = 'import-result error';
-        resultDiv.innerHTML = `Import failed: ${err.message}`;
+        resultDiv.textContent = `Import failed: ${err.message}`;
     } finally {
         submitBtn.disabled = false;
         submitBtn.textContent = 'Import';

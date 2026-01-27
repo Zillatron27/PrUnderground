@@ -11,6 +11,7 @@ from sqlalchemy.orm import Session
 
 from ..models import User, Listing
 from ..fio_client import FIOClient, extract_storage_locations
+from ..encryption import decrypt_api_key
 from .planet_sync import get_cx_station_names
 
 logger = logging.getLogger(__name__)
@@ -43,7 +44,9 @@ async def sync_user_fio_data(user: User, db: Session, force: bool = False) -> bo
         logger.warning(f"Cannot sync FIO data for {user.fio_username}: no API key")
         return False
 
-    client = FIOClient(api_key=user.fio_api_key)
+    # Decrypt the API key before use
+    decrypted_key = decrypt_api_key(user.fio_api_key)
+    client = FIOClient(api_key=decrypted_key)
 
     try:
         # Fetch FIO data

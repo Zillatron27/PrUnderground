@@ -35,7 +35,7 @@ class User(Base):
     company_code = Column(String(10), index=True)
     company_name = Column(String(100))
     discord_id = Column(String(50), unique=True, nullable=True)
-    fio_api_key = Column(String(100), nullable=True)  # Encrypted in production
+    fio_api_key = Column(String(256), nullable=True)  # Encrypted with Fernet (see encryption.py)
     fio_last_synced = Column(DateTime, nullable=True)  # When FIO data was last pulled
     created_at = Column(DateTime, default=datetime.utcnow)
     updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)

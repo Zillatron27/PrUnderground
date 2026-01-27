@@ -19,6 +19,7 @@ from .routers import auth, listings, profile, data, bundles
 from .routers.auth import get_current_user, require_user
 from .fio_client import FIOClient, extract_active_production
 from .fio_cache import fio_cache
+from .encryption import decrypt_api_key
 from .utils import format_price
 from .audit import AuditLog, log_audit, AuditAction  # Import to register model
 from .template_utils import templates, render_template
@@ -27,7 +28,7 @@ from .services.material_sync import sync_materials, is_material_sync_needed
 from .services.planet_sync import sync_planets, is_planet_sync_needed
 
 # App version - single source of truth
-__version__ = "1.0.1"
+__version__ = "1.0.3"
 
 # Configure logging
 logging.basicConfig(
@@ -99,7 +100,7 @@ async def frame_headers(request: Request, call_next):
     response: Response = await call_next(request)
     response.headers["Content-Security-Policy"] = (
         "frame-ancestors 'self' https://apex.prosperousuniverse.com "
-        "https://*.prosperousuniverse.com"
+        "https://www.prosperousuniverse.com"
     )
     return response
 
@@ -118,7 +119,8 @@ app.include_router(data.router)
 async def home(request: Request, db: Session = Depends(get_db)):
     """Home page."""
     current_user = get_current_user(request, db)
-    return templates.TemplateResponse(
+    return render_template(
+        request,
         "home.html",
         {"request": request, "title": "PrUnderground", "current_user": current_user},
     )
@@ -185,7 +187,8 @@ async def fetch_suggestions(user: User) -> list:
     # Fetch from FIO
     suggestions = []
     if user.fio_api_key:
-        client = FIOClient(api_key=user.fio_api_key)
+        decrypted_key = decrypt_api_key(user.fio_api_key)
+        client = FIOClient(api_key=decrypted_key)
         try:
             production_lines = await client.get_user_production(username)
             suggestions = sorted(extract_active_production(production_lines))

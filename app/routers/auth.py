@@ -12,8 +12,9 @@ from ..database import get_db
 from ..models import User
 from ..fio_client import FIOClient, FIOAuthError, FIOError
 from ..audit import log_audit, AuditAction
-from ..csrf import verify_csrf
+from ..csrf import verify_csrf, get_cookie_settings
 from ..template_utils import render_template
+from ..encryption import encrypt_api_key, decrypt_api_key
 
 logger = logging.getLogger(__name__)
 
@@ -82,8 +83,9 @@ async def check_user(
     ).first()
 
     if existing_user and existing_user.fio_api_key:
-        # Try to validate the stored API key
-        client = FIOClient(api_key=existing_user.fio_api_key)
+        # Try to validate the stored API key (decrypt it first)
+        decrypted_key = decrypt_api_key(existing_user.fio_api_key)
+        client = FIOClient(api_key=decrypted_key)
         try:
             await client.verify_api_key(existing_user.fio_username)
             # Key is still valid - update company info and log them in
@@ -99,12 +101,13 @@ async def check_user(
             log_audit(db, AuditAction.USER_LOGIN, user_id=existing_user.id)
 
             response = RedirectResponse(url="/dashboard", status_code=303)
+            settings = get_cookie_settings(request)
             response.set_cookie(
                 key="session",
                 value=sign_session(existing_user.id),
                 httponly=True,
                 max_age=SESSION_MAX_AGE,
-                samesite="lax",
+                **settings,  # samesite and secure
             )
             return response
         except FIOAuthError:
@@ -206,8 +209,8 @@ async def connect_fio(
     ).first()
 
     if existing_user:
-        # Update existing user
-        existing_user.fio_api_key = fio_api_key
+        # Update existing user (encrypt API key before storing)
+        existing_user.fio_api_key = encrypt_api_key(fio_api_key)
         if company_code:
             existing_user.company_code = company_code
         if company_name:
@@ -216,10 +219,10 @@ async def connect_fio(
         user = existing_user
         log_audit(db, AuditAction.USER_LOGIN, user_id=user.id, details={"reconnected": True})
     else:
-        # Create new user
+        # Create new user (encrypt API key before storing)
         user = User(
             fio_username=fio_username,
-            fio_api_key=fio_api_key,
+            fio_api_key=encrypt_api_key(fio_api_key),
             company_code=company_code,
             company_name=company_name,
         )
@@ -230,12 +233,13 @@ async def connect_fio(
 
     # Store signed session token
     response = RedirectResponse(url="/dashboard", status_code=303)
+    settings = get_cookie_settings(request)
     response.set_cookie(
         key="session",
         value=sign_session(user.id),
         httponly=True,
         max_age=SESSION_MAX_AGE,
-        samesite="lax",
+        **settings,  # samesite and secure
     )
     return response
 
@@ -251,9 +255,10 @@ async def account_page(
         return RedirectResponse(url="/auth/login", status_code=303)
 
     # Mask the API key for display (show first 8 and last 4 chars)
+    # Decrypt first since it's stored encrypted
     masked_key = None
     if user.fio_api_key:
-        key = user.fio_api_key
+        key = decrypt_api_key(user.fio_api_key)
         if len(key) > 12:
             masked_key = f"{key[:8]}...{key[-4:]}"
         else:
@@ -292,8 +297,8 @@ async def refresh_api_key(
         await client.verify_api_key(user.fio_username)
         user_info = await client.get_user_info(user.fio_username)
 
-        # Update user record
-        user.fio_api_key = fio_api_key
+        # Update user record (encrypt API key before storing)
+        user.fio_api_key = encrypt_api_key(fio_api_key)
         if user_info:
             if user_info.get("CompanyCode"):
                 user.company_code = user_info["CompanyCode"]
@@ -356,15 +361,6 @@ def get_current_user(request: Request, db: Session = Depends(get_db)) -> User | 
     """Get the current logged-in user from the signed session cookie."""
     session_token = request.cookies.get("session")
     if not session_token:
-        # Check for old unsigned cookie (migration support)
-        old_user_id = request.cookies.get("user_id")
-        if old_user_id:
-            try:
-                user_id = int(old_user_id)
-                return db.query(User).filter(User.id == user_id).first()
-            except (ValueError, TypeError):
-                logger.warning(f"Malformed old user_id cookie: {old_user_id!r}")
-                return None
         return None
 
     user_id = verify_session(session_token)

@@ -15,6 +15,7 @@ from ..services.fio_sync import get_sync_staleness
 from ..audit import log_audit, AuditAction
 from ..csrf import verify_csrf
 from ..template_utils import templates, render_template
+from ..encryption import decrypt_api_key
 from .auth import get_current_user, require_user
 
 router = APIRouter()
@@ -200,9 +201,10 @@ async def get_suggestions_datalist(request: Request, db: Session = Depends(get_d
         if cached is not None:
             suggestions = cached
         else:
-            # Fetch from FIO
+            # Fetch from FIO (decrypt API key first)
             try:
-                client = FIOClient(api_key=user.fio_api_key)
+                decrypted_key = decrypt_api_key(user.fio_api_key)
+                client = FIOClient(api_key=decrypted_key)
                 production_lines = await client.get_user_production(user.fio_username)
                 suggestions = sorted(extract_active_production(production_lines))
                 fio_cache.set_suggestions(user.fio_username, suggestions)
@@ -232,9 +234,10 @@ async def get_storages_select(
         if cached is not None:
             storages = [s for s in cached if s["type"] in ("WAREHOUSE_STORE", "STORE")]
         else:
-            # Fetch from FIO
+            # Fetch from FIO (decrypt API key first)
             try:
-                client = FIOClient(api_key=user.fio_api_key)
+                decrypted_key = decrypt_api_key(user.fio_api_key)
+                client = FIOClient(api_key=decrypted_key)
                 raw_storages = await client.get_user_storage(user.fio_username)
                 sites = await client.get_user_sites(user.fio_username)
                 warehouses = await client.get_user_warehouses(user.fio_username)

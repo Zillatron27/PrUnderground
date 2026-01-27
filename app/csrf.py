@@ -96,6 +96,7 @@ def get_csrf_token(request: Request) -> str:
 def set_csrf_cookie(response, token: str, request: Request):
     """Set the CSRF token cookie on a response."""
     settings = get_cookie_settings(request)
+    logger.info(f"Setting CSRF cookie with settings: {settings}, x-forwarded-proto: {request.headers.get('x-forwarded-proto')}")
     response.set_cookie(
         key=CSRF_COOKIE_NAME,
         value=token,

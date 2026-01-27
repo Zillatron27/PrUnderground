@@ -25,6 +25,7 @@ You *can* run it just for yourself as a personal storefront, but the real value 
 - **Copy to Discord** - One click generates a formatted message (grouped by location) ready to paste into any channel.
 - **Browse & Search** - Filter by material or location. Multi-column sorting with visual sort builder.
 - **Import/Export** - Backup and restore your listings and bundles as JSON. Extensible format for future integrations.
+- **APEX Embed Support** - Embed PrUnderground in Refined PrUn's XIT WEB tiles with full authentication.
 
 ## Screenshots
 <img width="1024" height="768" alt="login" src="https://github.com/user-attachments/assets/ad45758e-068e-4597-b751-8cd1264b6eae" />
@@ -100,6 +101,7 @@ If upgrading an existing installation, run any new migration scripts:
 ```bash
 python scripts/add_bundle_tables.py
 python scripts/add_cx_absolute_column.py
+python scripts/encrypt_existing_keys.py  # v1.0.3: Encrypt FIO API keys at rest
 ```
 
 ## Tech Stack
@@ -116,7 +118,7 @@ python scripts/add_cx_absolute_column.py
 - [x] Bundles (multi-item packages)
 - [x] Multi-column sorting
 - [x] CX absolute offset pricing
-- [ ] Mobile UI improvements
+- [x] Mobile UI improvements
 - [ ] Discord integration
 - [ ] Custom copy templates
 - [ ] Multi-community support

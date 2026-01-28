@@ -11,6 +11,7 @@ from ..models import User, Bundle, BundleItem, ListingType, BundleStockMode
 from ..utils import clean_str
 from ..audit import log_audit, AuditAction
 from ..csrf import verify_csrf
+from ..services.telemetry import increment_stat, Metrics
 from ..template_utils import templates, render_template
 from ..services.planet_sync import get_all_locations_from_db, get_cx_station_names
 from ..fio_client import FIOClient, extract_storage_locations
@@ -199,6 +200,7 @@ async def create_bundle(
     storage_id: Optional[str] = Form(None),
     storage_name: Optional[str] = Form(None),
     ready_quantity: Optional[int] = Form(None),
+    low_stock_threshold: Optional[int] = Form(None),
     csrf_token: Optional[str] = Form(None),
     db: Session = Depends(get_db),
 ):
@@ -278,6 +280,7 @@ async def create_bundle(
         storage_id=bundle_storage_id,
         storage_name=bundle_storage_name,
         ready_quantity=bundle_ready_quantity,
+        low_stock_threshold=low_stock_threshold,
     )
     db.add(bundle)
     db.flush()  # Get the bundle ID before adding items
@@ -301,6 +304,7 @@ async def create_bundle(
         entity_id=bundle.id,
         details={"name": bundle.name, "item_count": len(items)},
     )
+    increment_stat(db, Metrics.BUNDLES_CREATED)
 
     return RedirectResponse(url="/dashboard", status_code=303)
 
@@ -354,6 +358,7 @@ async def update_bundle(
     storage_id: Optional[str] = Form(None),
     storage_name: Optional[str] = Form(None),
     ready_quantity: Optional[int] = Form(None),
+    low_stock_threshold: Optional[int] = Form(None),
     csrf_token: Optional[str] = Form(None),
     db: Session = Depends(get_db),
 ):
@@ -443,6 +448,7 @@ async def update_bundle(
     bundle.storage_name = bundle_storage_name
     bundle.ready_quantity = bundle_ready_quantity
     bundle.available_quantity = bundle_available_quantity
+    bundle.low_stock_threshold = low_stock_threshold
 
     # Replace all items (delete old, add new)
     for old_item in bundle.items:

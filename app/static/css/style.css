@@ -1318,6 +1318,19 @@ table tbody tr:hover {
     color: var(--accent-red);
 }
 
+/* Qty value colors (browse/profile pages) */
+.qty-value.qty-ok {
+    color: var(--accent-green);
+}
+
+.qty-value.qty-low {
+    color: var(--accent-orange);
+}
+
+.qty-value.qty-out {
+    color: var(--accent-red);
+}
+
 .inventory-detail {
     font-weight: normal;
     color: var(--text-secondary);

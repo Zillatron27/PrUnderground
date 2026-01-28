@@ -16,7 +16,7 @@ from slowapi.errors import RateLimitExceeded
 
 from .database import engine, Base, get_db
 from .models import User, Listing, Bundle
-from .routers import auth, listings, profile, data, bundles
+from .routers import auth, listings, profile, data, bundles, admin
 from .routers.auth import get_current_user, require_user
 from .fio_client import FIOClient, extract_active_production
 from .fio_cache import fio_cache
@@ -27,9 +27,12 @@ from .template_utils import templates, render_template
 from .services.fio_sync import sync_user_fio_data, get_sync_staleness
 from .services.material_sync import sync_materials, is_material_sync_needed
 from .services.planet_sync import sync_planets, is_planet_sync_needed
+from .services.cx_sync import get_cx_prices_bulk, get_sync_age_string as get_cx_sync_age
+from .services.telemetry import increment_stat, Metrics
+from .scheduler import start_scheduler, stop_scheduler
 
 # App version - single source of truth
-__version__ = "1.0.4"
+__version__ = "1.0.5"
 
 # Configure logging
 logging.basicConfig(
@@ -65,8 +68,13 @@ async def lifespan(app: FastAPI):
     finally:
         db.close()
 
+    # Start background scheduler for CX price sync
+    start_scheduler()
+
     yield
-    # Shutdown
+
+    # Shutdown: stop scheduler
+    stop_scheduler()
 
 
 app = FastAPI(
@@ -116,6 +124,7 @@ app.include_router(auth.router, prefix="/auth", tags=["auth"])
 app.include_router(listings.router, prefix="/listings", tags=["listings"])
 app.include_router(bundles.router, prefix="/bundles", tags=["bundles"])
 app.include_router(profile.router, prefix="/u", tags=["profile"])
+app.include_router(admin.router, prefix="/admin", tags=["admin"])
 app.include_router(data.router)
 
 
@@ -161,6 +170,10 @@ async def dashboard(request: Request, db: Session = Depends(get_db)):
         .all()
     )
 
+    # Get CX prices for calculated price display
+    cx_prices = get_cx_prices_bulk(db)
+    cx_sync_age = get_cx_sync_age(db)
+
     return render_template(
         request,
         "dashboard.html",
@@ -172,6 +185,8 @@ async def dashboard(request: Request, db: Session = Depends(get_db)):
             "bundles": user_bundles,
             "format_price": format_price,
             "now": datetime.utcnow(),
+            "cx_prices": cx_prices,
+            "cx_sync_age": cx_sync_age,
         },
     )
 
@@ -245,6 +260,8 @@ async def dashboard_inventory(request: Request, db: Session = Depends(get_db)):
                 "available": listing.available_quantity,
             }
 
+    cx_prices = get_cx_prices_bulk(db)
+
     return render_template(
         request,
         "partials/dashboard_inventory.html",
@@ -254,6 +271,7 @@ async def dashboard_inventory(request: Request, db: Session = Depends(get_db)):
             "listing_inventory": listing_inventory,
             "format_price": format_price,
             "now": datetime.utcnow(),
+            "cx_prices": cx_prices,
         },
     )
 
@@ -263,11 +281,18 @@ async def dashboard_status(request: Request, db: Session = Depends(get_db)):
     """HTMX endpoint: Get current FIO sync status."""
     user = require_user(request, db)
     staleness = get_sync_staleness(user)
+    cx_sync_age = get_cx_sync_age(db)
 
+    parts = []
     if user.fio_last_synced:
-        return f'<span class="fio-refresh-status">FIO data updated: {staleness}</span>'
+        parts.append(f'<span class="fio-refresh-status">FIO data: {staleness}</span>')
     else:
-        return '<span class="fio-refresh-status">FIO data not synced</span>'
+        parts.append('<span class="fio-refresh-status">FIO data not synced</span>')
+
+    if cx_sync_age:
+        parts.append(f'<span class="fio-refresh-status">CX prices: {cx_sync_age}</span>')
+
+    return " · ".join(parts)
 
 
 @app.post("/api/fio/refresh", response_class=HTMLResponse)
@@ -279,8 +304,9 @@ async def refresh_fio_data(request: Request, db: Session = Depends(get_db)):
     # Sync FIO data (forced refresh)
     success = await sync_user_fio_data(user, db, force=True)
 
-    # Audit log
+    # Audit log and telemetry
     log_audit(db, AuditAction.FIO_REFRESH, user_id=user.id)
+    increment_stat(db, Metrics.FIO_SYNCS)
 
     # Also invalidate suggestions cache so they refresh
     fio_cache.invalidate_user(user.fio_username)

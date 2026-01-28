@@ -10,6 +10,12 @@
         <a href="/bundles" class="browse-tab">Bundles</a>
     </div>
 
+    {% if cx_sync_age %}
+    <div class="fio-status-bar">
+        <span class="fio-refresh-status">CX prices: {{ cx_sync_age }}</span>
+    </div>
+    {% endif %}
+
     <form class="filter-form" method="get" action="/listings">
         <div class="filter-row">
             <div class="filter-group">
@@ -101,7 +107,7 @@
                 <td class="col-quantity qty-cell"{% if listing.available_quantity is not none and is_sync_stale(listing.user) %} title="FIO data updated > 1 day ago"{% endif %}>
                     {{ quantity_display(listing) }}
                 </td>
-                <td class="col-price">{{ price_display(listing) }}</td>
+                <td class="col-price">{{ price_display(listing, cx_prices) }}</td>
                 <td class="col-location">{{ cx_location(listing.storage_name or listing.location) }}</td>
                 <td class="col-notes notes-cell" {% if listing.notes %}title="{{ listing.notes }}"{% endif %}>{{ listing.notes or '—' }}</td>
                 <td class="col-updated">{{ date_display(listing.updated_at) }}</td>

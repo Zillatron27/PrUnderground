@@ -29,6 +29,9 @@
             {% if current_user %}
                 <a href="/u/{{ current_user.fio_username }}">Profile</a>
                 <a href="/auth/account">Account</a>
+                {% if is_admin(current_user) %}
+                <a href="/admin/stats" class="nav-admin">Admin</a>
+                {% endif %}
                 <a href="/auth/logout">Logout</a>
             {% else %}
                 <a href="/auth/login">Login</a>

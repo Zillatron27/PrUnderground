@@ -8,6 +8,9 @@ from ..database import get_db
 from ..models import User, Listing, Bundle
 from ..utils import format_price
 from ..services.fio_sync import get_sync_staleness
+from ..services.discord_format import render_discord
+from ..services.cx_sync import get_cx_prices_bulk, get_sync_age_string as get_cx_sync_age
+from ..services.telemetry import increment_stat, Metrics
 from ..template_utils import templates, render_template
 from .auth import get_current_user
 
@@ -42,6 +45,10 @@ async def public_profile(
     )
     current_user = get_current_user(request, db)
 
+    # Get CX prices for calculated price display
+    cx_prices = get_cx_prices_bulk(db)
+    cx_sync_age = get_cx_sync_age(db)
+
     return render_template(
         request,
         "profile/public.html",
@@ -52,6 +59,8 @@ async def public_profile(
             "listings": listings,
             "bundles": bundles,
             "current_user": current_user,
+            "cx_prices": cx_prices,
+            "cx_sync_age": cx_sync_age,
         },
     )
 
@@ -62,7 +71,7 @@ async def discord_copy(
     username: str,
     db: Session = Depends(get_db),
 ):
-    """Generate Discord-formatted text for copy/paste."""
+    """Generate Discord-formatted text for copy/paste using user's custom template."""
     user = db.query(User).filter(User.fio_username == username).first()
     if not user:
         raise HTTPException(status_code=404, detail="User not found")
@@ -76,35 +85,9 @@ async def discord_copy(
         .all()
     )
 
-    if not listings:
-        return f"**[{user.company_code or '???'}] {user.fio_username}** has no active listings."
-
-    # Group listings by location
-    by_location = {}
-    for listing in listings:
-        loc = listing.storage_name or listing.location or "Unknown"
-        if loc not in by_location:
-            by_location[loc] = []
-        by_location[loc].append(listing)
-
-    # Build Discord message
-    date_str = datetime.utcnow().strftime("%d %b %Y")
-    lines = [
-        f"🚀 **[{user.company_code or '???'}] {user.fio_username}** - Updated {date_str}",
-    ]
-
-    for location, loc_listings in by_location.items():
-        lines.append("")
-        lines.append(f"**{location}:**")
-        for listing in sorted(loc_listings, key=lambda l: l.material_ticker):
-            price_str = format_price(listing)
-            qty = listing.available_quantity if listing.available_quantity is not None else listing.quantity
-            qty_str = f" × {qty:,}" if qty else ""
-            lines.append(f"• {listing.material_ticker}{qty_str} @ {price_str}")
-
-    # Add link to full listings
     base_url = str(request.base_url).rstrip("/")
-    lines.append("")
-    lines.append(f"📋 Full listings: {base_url}/u/{username}")
 
-    return "\n".join(lines)
+    # Track Discord copy usage
+    increment_stat(db, Metrics.DISCORD_COPIES)
+
+    return render_discord(user, listings, base_url)

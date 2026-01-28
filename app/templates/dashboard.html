@@ -30,12 +30,15 @@
     <div class="fio-status-bar" id="fio-status"
          hx-get="/api/dashboard/status" hx-trigger="fioLoaded from:body" hx-swap="innerHTML">
         {% if current_user.fio_last_synced %}
-        <span class="fio-refresh-status">FIO data updated: {{ get_sync_staleness(current_user) }}</span>
+        <span class="fio-refresh-status">FIO data: {{ get_sync_staleness(current_user) }}</span>
         {% else %}
         <span class="fio-refresh-status fio-loading-inline">
             <span class="spinner-data spinner-sm"></span>
             Syncing FIO data...
         </span>
+        {% endif %}
+        {% if cx_sync_age %}
+         · <span class="fio-refresh-status">CX prices: {{ cx_sync_age }}</span>
         {% endif %}
     </div>
 
@@ -74,7 +77,7 @@
                                 <span class="fio-loading-inline"><span class="spinner-data spinner-sm"></span></span>
                             {% endif %}
                         </td>
-                        <td class="col-price">{{ price_display(listing) }}</td>
+                        <td class="col-price">{{ price_display(listing, cx_prices) }}</td>
                         <td class="col-location">{{ cx_location(listing.storage_name or listing.location) }}</td>
                         <td class="col-type">
                             <span class="badge badge-{{ listing.listing_type.value }}">

@@ -80,6 +80,48 @@
     </section>
 
     <section class="account-section">
+        <h2>Discord Template</h2>
+        <p class="section-description">
+            Customize how your listings appear when copied for Discord. Leave blank to use the default format.
+        </p>
+
+        {% if request.query_params.get('template_updated') %}
+        <div class="alert alert-success">
+            Discord template updated successfully.
+        </div>
+        {% endif %}
+
+        <form action="/auth/update-discord-template" method="post" class="account-form">
+            <input type="hidden" name="{{ csrf_field_name }}" value="{{ csrf_token }}">
+            <div class="form-group">
+                <label for="discord_template">Custom Template</label>
+                <textarea id="discord_template" name="discord_template" rows="8"
+                          placeholder="Leave blank to use default format">{{ user.discord_template or '' }}</textarea>
+            </div>
+
+            <details class="template-help">
+                <summary>Available Variables</summary>
+                <div class="template-variables">
+                    <ul>
+                        <li><code>{company_code}</code> - Your company code (e.g., "ABC")</li>
+                        <li><code>{username}</code> - Your FIO username</li>
+                        <li><code>{date}</code> - Current date (e.g., "28 Jan 2026")</li>
+                        <li><code>{profile_url}</code> - Link to your profile page</li>
+                        <li><code>{listings_by_location}</code> - Auto-formatted listings grouped by location</li>
+                        <li><code>{listing_count}</code> - Total number of active listings</li>
+                        <li><code>{location_count}</code> - Number of unique locations</li>
+                    </ul>
+                </div>
+            </details>
+
+            <div class="form-actions-row">
+                <button type="submit" class="btn btn-primary">Save Template</button>
+                <button type="button" class="btn btn-secondary" onclick="resetTemplate()">Reset to Default</button>
+            </div>
+        </form>
+    </section>
+
+    <section class="account-section">
         <h2>Import / Export</h2>
         <div class="data-management-grid">
             <div class="data-card">
@@ -136,6 +178,10 @@
 </div>
 
 <script>
+function resetTemplate() {
+    document.getElementById('discord_template').value = '';
+}
+
 document.getElementById('import-form').addEventListener('submit', async function(e) {
     e.preventDefault();
     const form = e.target;

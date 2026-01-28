@@ -9,11 +9,12 @@
             {% set qty_class = 'qty-ok' %}
             {% set stock_badge = '' %}
             {% set stock_status = '' %}
+            {% set threshold = listing.low_stock_threshold if listing.low_stock_threshold is not none else 10 %}
             {% if inv.available == 0 %}
                 {% set qty_class = 'qty-out' %}
                 {% set stock_badge = 'OUT OF STOCK' %}
                 {% set stock_status = 'out' %}
-            {% elif inv.available <= 10 %}
+            {% elif inv.available <= threshold %}
                 {% set qty_class = 'qty-low' %}
                 {% set stock_badge = 'LOW STOCK' %}
                 {% set stock_status = 'low' %}
@@ -32,7 +33,7 @@
             —
         {% endif %}
     </td>
-    <td class="col-price">{{ price_display(listing) }}</td>
+    <td class="col-price">{{ price_display(listing, cx_prices) }}</td>
     <td class="col-location">{{ cx_location(listing.storage_name or listing.location) }}</td>
     <td class="col-type">
         <span class="badge badge-{{ listing.listing_type.value }}">

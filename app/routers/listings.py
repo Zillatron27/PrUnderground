@@ -12,8 +12,10 @@ from ..services.material_sync import get_all_materials_from_db, get_material_cat
 from ..services.planet_sync import get_all_locations_from_db, get_cx_station_names
 from ..utils import format_price, clean_str
 from ..services.fio_sync import get_sync_staleness
+from ..services.cx_sync import get_cx_prices_bulk, get_sync_age_string as get_cx_sync_age
 from ..audit import log_audit, AuditAction
 from ..csrf import verify_csrf
+from ..services.telemetry import increment_stat, Metrics
 from ..template_utils import templates, render_template
 from ..encryption import decrypt_api_key
 from .auth import get_current_user, require_user
@@ -123,6 +125,13 @@ async def browse_listings(
         if l.storage_name or l.location
     ))
 
+    # Get CX prices for calculated price display
+    cx_prices = get_cx_prices_bulk(db)
+    cx_sync_age = get_cx_sync_age(db)
+
+    # Track page view
+    increment_stat(db, Metrics.LISTINGS_VIEWED)
+
     return templates.TemplateResponse(
         "listings/browse.html",
         {
@@ -135,6 +144,8 @@ async def browse_listings(
             "available_locations": available_locations,
             "sort_spec": sort_spec,
             "sort_param": sort or "",
+            "cx_prices": cx_prices,
+            "cx_sync_age": cx_sync_age,
         },
     )
 
@@ -273,6 +284,7 @@ async def create_listing(
     storage_id: Optional[str] = Form(None),
     storage_name: Optional[str] = Form(None),
     reserve_quantity: Optional[int] = Form(None),
+    low_stock_threshold: Optional[int] = Form(10),
     expires_at: Optional[str] = Form(None),
     csrf_token: Optional[str] = Form(None),
     db: Session = Depends(get_db),
@@ -313,6 +325,7 @@ async def create_listing(
         storage_id=clean_str(storage_id),
         storage_name=clean_str(storage_name),
         reserve_quantity=reserve_quantity if reserve_quantity else 0,
+        low_stock_threshold=low_stock_threshold if low_stock_threshold is not None else 10,
         expires_at=expires_at_dt,
     )
     db.add(listing)
@@ -327,6 +340,7 @@ async def create_listing(
         entity_id=listing.id,
         details={"material": material_ticker.upper()},
     )
+    increment_stat(db, Metrics.LISTINGS_CREATED)
 
     return RedirectResponse(url="/dashboard", status_code=303)
 
@@ -376,6 +390,7 @@ async def update_listing(
     storage_id: Optional[str] = Form(None),
     storage_name: Optional[str] = Form(None),
     reserve_quantity: Optional[int] = Form(None),
+    low_stock_threshold: Optional[int] = Form(10),
     expires_at: Optional[str] = Form(None),
     csrf_token: Optional[str] = Form(None),
     db: Session = Depends(get_db),
@@ -420,6 +435,7 @@ async def update_listing(
     listing.storage_id = clean_str(storage_id)
     listing.storage_name = clean_str(storage_name)
     listing.reserve_quantity = reserve_quantity if reserve_quantity else 0
+    listing.low_stock_threshold = low_stock_threshold if low_stock_threshold is not None else 10
     listing.expires_at = expires_at_dt
 
     db.commit()

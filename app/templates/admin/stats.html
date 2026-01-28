@@ -1,0 +1,183 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="admin-page">
+    <h1>Admin Dashboard</h1>
+
+    <section class="admin-section">
+        <h2>Overview</h2>
+        <div class="stats-grid">
+            <div class="stat-card">
+                <div class="stat-value">{{ total_users }}</div>
+                <div class="stat-label">Total Users</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-value">{{ total_listings }}</div>
+                <div class="stat-label">Total Listings</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-value">{{ total_bundles }}</div>
+                <div class="stat-label">Total Bundles</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-value">{{ active_users_month }}</div>
+                <div class="stat-label">Active Users (30d)</div>
+            </div>
+        </div>
+    </section>
+
+    <section class="admin-section">
+        <h2>Usage Metrics</h2>
+
+        <div class="metrics-table-wrapper">
+            <table class="metrics-table">
+                <thead>
+                    <tr>
+                        <th>Metric</th>
+                        <th>Today</th>
+                        <th>Last 7 Days</th>
+                        <th>Last 30 Days</th>
+                        <th>All Time</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for metric in stats.all_time.keys() | sort %}
+                    <tr>
+                        <td><code>{{ metric }}</code></td>
+                        <td>{{ stats.today.get(metric, 0) | default(0) }}</td>
+                        <td>{{ stats.week.get(metric, 0) | default(0) }}</td>
+                        <td>{{ stats.month.get(metric, 0) | default(0) }}</td>
+                        <td>{{ stats.all_time.get(metric, 0) | default(0) }}</td>
+                    </tr>
+                    {% else %}
+                    <tr>
+                        <td colspan="5" class="empty-state">No metrics recorded yet.</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </section>
+
+    <section class="admin-section">
+        <h2>Metric Definitions</h2>
+        <div class="metric-definitions">
+            <dl>
+                <dt><code>active_users_daily</code></dt>
+                <dd>Unique users who logged in or performed an action</dd>
+
+                <dt><code>listings_created</code></dt>
+                <dd>New listings created</dd>
+
+                <dt><code>listings_viewed</code></dt>
+                <dd>Times the browse listings page was viewed</dd>
+
+                <dt><code>bundles_created</code></dt>
+                <dd>New bundles created</dd>
+
+                <dt><code>discord_copies</code></dt>
+                <dd>Discord copy endpoint accessed</dd>
+
+                <dt><code>fio_syncs</code></dt>
+                <dd>FIO data refresh operations</dd>
+
+                <dt><code>logins</code></dt>
+                <dd>Successful login events</dd>
+            </dl>
+        </div>
+    </section>
+</div>
+
+<style>
+.admin-page {
+    max-width: 1200px;
+    margin: 0 auto;
+}
+
+.admin-section {
+    margin-bottom: var(--space-xl);
+}
+
+.stats-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+    gap: var(--space-md);
+    margin-bottom: var(--space-lg);
+}
+
+.stat-card {
+    background: var(--bg-secondary);
+    border: 1px solid var(--border-color);
+    border-radius: var(--border-radius);
+    padding: var(--space-md);
+    text-align: center;
+}
+
+.stat-value {
+    font-size: 2rem;
+    font-weight: bold;
+    color: var(--text-primary);
+}
+
+.stat-label {
+    color: var(--text-secondary);
+    font-size: 0.875rem;
+    margin-top: var(--space-xs);
+}
+
+.metrics-table-wrapper {
+    overflow-x: auto;
+}
+
+.metrics-table {
+    width: 100%;
+    border-collapse: collapse;
+}
+
+.metrics-table th,
+.metrics-table td {
+    padding: var(--space-sm) var(--space-md);
+    text-align: left;
+    border-bottom: 1px solid var(--border-color);
+}
+
+.metrics-table th {
+    background: var(--bg-secondary);
+    font-weight: 600;
+}
+
+.metrics-table td:not(:first-child) {
+    text-align: right;
+    font-family: monospace;
+}
+
+.metric-definitions {
+    background: var(--bg-secondary);
+    border: 1px solid var(--border-color);
+    border-radius: var(--border-radius);
+    padding: var(--space-md);
+}
+
+.metric-definitions dl {
+    display: grid;
+    grid-template-columns: auto 1fr;
+    gap: var(--space-sm) var(--space-md);
+    margin: 0;
+}
+
+.metric-definitions dt {
+    font-weight: 600;
+}
+
+.metric-definitions dd {
+    color: var(--text-secondary);
+    margin: 0;
+}
+
+.empty-state {
+    text-align: center;
+    color: var(--text-secondary);
+    padding: var(--space-lg) !important;
+}
+</style>
+{% endblock %}

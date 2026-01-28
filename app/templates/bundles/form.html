@@ -114,6 +114,13 @@
                        value="{{ bundle.quantity if bundle and bundle.quantity else '' }}"
                        placeholder="e.g., 10">
             </div>
+            <div class="form-group">
+                <label for="low_stock_threshold">Low Stock Threshold</label>
+                <input type="number" id="low_stock_threshold" name="low_stock_threshold" min="0"
+                       value="{{ bundle.low_stock_threshold if bundle and bundle.low_stock_threshold is not none else '' }}"
+                       placeholder="Leave blank for no threshold">
+                <p class="help-text">Optional - show "Low Stock" badge at or below this quantity</p>
+            </div>
         </div>
 
         <div class="form-row" id="made-to-order-fields" style="display: none;">

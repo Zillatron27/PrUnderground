@@ -51,14 +51,27 @@
     Price display
     Desktop: Full formatted price (CX.NC1-10%, 1,500/u)
     Medium/Narrow: Condensed (CX-10%, 1.5k/u)
+    If cx_prices is available, shows calculated actual price for CX-relative listings
 #}
-{% macro price_display(listing) -%}
-<span class="hide-medium">{{ format_price(listing) }}</span>
+{% macro price_display(listing, cx_prices=None) -%}
+{%- set calculated_price = None -%}
+{%- if cx_prices and listing.price_type.value == 'cx_relative' and listing.price_value is not none and listing.price_exchange and listing.material_ticker -%}
+    {%- set cx_key = (listing.material_ticker, listing.price_exchange) -%}
+    {%- set cx_ask = cx_prices.get(cx_key) -%}
+    {%- if cx_ask -%}
+        {%- set calculated_price = calculate_cx_actual_price(cx_ask, listing.price_value, listing.price_cx_is_absolute) -%}
+    {%- endif -%}
+{%- endif -%}
+<span class="hide-medium">{{ format_price(listing) }}{% if calculated_price %} <span class="cx-calculated">({{ '{:,.0f}'.format(calculated_price) }}/u)</span>{% endif %}</span>
 <span class="show-medium">
     {%- if listing.price_type.value == 'absolute' and listing.price_value is not none -%}
         {{ condense_number(listing.price_value) }}/u
     {%- elif listing.price_type.value == 'cx_relative' and listing.price_value is not none -%}
-        CX{{ '{:+.0f}'.format(listing.price_value) }}{% if not listing.price_cx_is_absolute %}%{% endif %}
+        {%- if calculated_price -%}
+            {{ condense_number(calculated_price) }}/u
+        {%- else -%}
+            CX{{ '{:+.0f}'.format(listing.price_value) }}{% if not listing.price_cx_is_absolute %}%{% endif %}
+        {%- endif -%}
     {%- else -%}
         —
     {%- endif -%}
@@ -73,7 +86,8 @@
 {% macro quantity_display(listing) -%}
 {%- set qty = listing.available_quantity if listing.available_quantity is not none else listing.quantity -%}
 {%- set status = get_stock_status(listing) -%}
-<span class="qty-value">
+{%- set qty_class = 'qty-out' if status == 'out' else ('qty-low' if status == 'low' else 'qty-ok') -%}
+<span class="qty-value {{ qty_class }}">
     {%- if qty is not none -%}
         {{ '{:,}'.format(qty) }}
     {%- else -%}
@@ -110,8 +124,10 @@
     - UNLIMITED: ∞ (cyan)
     - MADE_TO_ORDER: Purple badge + optional "(X ready)"
     - FIO_SYNC: computed quantity + stock badges
+    Uses get_bundle_stock_status() for threshold-aware stock badges.
 #}
 {% macro bundle_quantity_display(bundle) -%}
+{%- set status = get_bundle_stock_status(bundle) -%}
 {%- if bundle.stock_mode.value == 'unlimited' -%}
     <span class="qty-unlimited">∞</span>
 {%- elif bundle.stock_mode.value == 'made_to_order' -%}
@@ -124,10 +140,10 @@
     {%- if qty is not none -%}
         <span class="hide-medium">{{ '{:,}'.format(qty) }}</span>
         <span class="show-medium">{{ condense_number(qty) }}</span>
-        {%- if qty == 0 -%}
+        {%- if status == 'out' -%}
             <span class="badge badge-out-of-stock hide-medium">OUT OF STOCK</span>
             <span class="stock-dot stock-out show-medium" title="Out of stock"></span>
-        {%- elif qty <= 5 -%}
+        {%- elif status == 'low' -%}
             <span class="badge badge-low-stock hide-medium">LOW STOCK</span>
             <span class="stock-dot stock-low show-medium" title="Low stock"></span>
         {%- endif -%}
@@ -139,10 +155,10 @@
     {%- if bundle.quantity is not none -%}
         <span class="hide-medium">{{ '{:,}'.format(bundle.quantity) }}</span>
         <span class="show-medium">{{ condense_number(bundle.quantity) }}</span>
-        {%- if bundle.quantity == 0 -%}
+        {%- if status == 'out' -%}
             <span class="badge badge-out-of-stock hide-medium">OUT OF STOCK</span>
             <span class="stock-dot stock-out show-medium" title="Out of stock"></span>
-        {%- elif bundle.quantity <= 5 -%}
+        {%- elif status == 'low' -%}
             <span class="badge badge-low-stock hide-medium">LOW STOCK</span>
             <span class="stock-dot stock-low show-medium" title="Low stock"></span>
         {%- endif -%}

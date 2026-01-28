@@ -24,19 +24,14 @@
         </div>
     </header>
 
+    {% if cx_sync_age %}
+    <div class="fio-status-bar">
+        <span class="fio-refresh-status">CX prices: {{ cx_sync_age }}</span>
+    </div>
+    {% endif %}
+
     <section class="profile-listings">
         <h2>Listings ({{ listings|length }})</h2>
-        {% if profile_user.fio_last_synced or listings %}
-        <p class="fio-status-bar">
-            {% if profile_user.fio_last_synced %}
-            <span class="fio-refresh-status">FIO data updated: {{ get_sync_staleness(profile_user) }}</span>
-            {% endif %}
-            {% if profile_user.fio_last_synced and listings %} · {% endif %}
-            {% if listings %}
-            <span class="fio-refresh-status">Listings updated: {{ listings[0].updated_at.strftime('%d %b %Y') }}</span>
-            {% endif %}
-        </p>
-        {% endif %}
         {% if listings %}
         <div class="table-wrapper">
         <table class="listings-table">
@@ -56,7 +51,7 @@
                 <tr>
                     <td class="col-material">{{ material_ticker(listing.material_ticker) }}</td>
                     <td class="col-quantity qty-cell">{{ quantity_display(listing) }}</td>
-                    <td class="col-price">{{ price_display(listing) }}</td>
+                    <td class="col-price">{{ price_display(listing, cx_prices) }}</td>
                     <td class="col-location">{{ cx_location(listing.storage_name or listing.location) }}</td>
                     <td class="col-type">
                         <span class="badge badge-{{ listing.listing_type.value }}">

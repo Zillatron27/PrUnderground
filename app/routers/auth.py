@@ -15,6 +15,7 @@ from ..audit import log_audit, AuditAction
 from ..csrf import verify_csrf, get_cookie_settings
 from ..template_utils import render_template
 from ..encryption import encrypt_api_key, decrypt_api_key
+from ..services.telemetry import increment_stat, Metrics
 
 logger = logging.getLogger(__name__)
 
@@ -97,8 +98,10 @@ async def check_user(
                     existing_user.company_name = user_info["CompanyName"]
                 db.commit()
 
-            # Audit log successful login
+            # Audit log successful login and telemetry
             log_audit(db, AuditAction.USER_LOGIN, user_id=existing_user.id)
+            increment_stat(db, Metrics.LOGINS)
+            increment_stat(db, Metrics.ACTIVE_USERS_DAILY)
 
             response = RedirectResponse(url="/dashboard", status_code=303)
             settings = get_cookie_settings(request)
@@ -218,6 +221,8 @@ async def connect_fio(
         db.commit()
         user = existing_user
         log_audit(db, AuditAction.USER_LOGIN, user_id=user.id, details={"reconnected": True})
+        increment_stat(db, Metrics.LOGINS)
+        increment_stat(db, Metrics.ACTIVE_USERS_DAILY)
     else:
         # Create new user (encrypt API key before storing)
         user = User(
@@ -230,6 +235,8 @@ async def connect_fio(
         db.commit()
         db.refresh(user)
         log_audit(db, AuditAction.USER_LOGIN, user_id=user.id, details={"new_user": True})
+        increment_stat(db, Metrics.LOGINS)
+        increment_stat(db, Metrics.ACTIVE_USERS_DAILY)
 
     # Store signed session token
     response = RedirectResponse(url="/dashboard", status_code=303)
@@ -340,6 +347,46 @@ async def refresh_api_key(
         )
     finally:
         await client.close()
+
+
+@router.post("/update-discord-template")
+async def update_discord_template(
+    request: Request,
+    discord_template: Optional[str] = Form(None),
+    csrf_token: str = Form(None),
+    db: Session = Depends(get_db),
+):
+    """Update the user's Discord template."""
+    await verify_csrf(request, csrf_token)
+    user = get_current_user(request, db)
+    if not user:
+        return RedirectResponse(url="/auth/login", status_code=303)
+
+    # Validate template if provided
+    if discord_template and discord_template.strip():
+        from ..services.discord_format import validate_template
+        is_valid, error = validate_template(discord_template)
+        if not is_valid:
+            return render_template(
+                request,
+                "auth/account.html",
+                {
+                    "request": request,
+                    "title": "Account Settings",
+                    "user": user,
+                    "current_user": user,
+                    "masked_key": None,
+                    "error": f"Invalid template: {error}",
+                },
+                status_code=400,
+            )
+        user.discord_template = discord_template.strip()
+    else:
+        user.discord_template = None  # Reset to default
+
+    db.commit()
+
+    return RedirectResponse(url="/auth/account?template_updated=1", status_code=303)
 
 
 @router.get("/logout")

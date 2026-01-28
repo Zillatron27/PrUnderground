@@ -7,8 +7,10 @@ from fastapi import Request
 from fastapi.templating import Jinja2Templates
 
 from .csrf import get_csrf_token, set_csrf_cookie, CSRF_FORM_FIELD
-from .utils import format_price, get_stock_status, is_sync_stale
+from .utils import format_price, get_stock_status, get_bundle_stock_status, is_sync_stale, calculate_cx_actual_price
 from .services.fio_sync import get_sync_staleness
+from .services.cx_sync import get_sync_age_string as get_cx_sync_age
+from .admin import is_admin
 
 
 # Cache-busting: get static file modification times at startup
@@ -143,8 +145,12 @@ def get_display_context(request: Request) -> dict:
 templates = Jinja2Templates(directory="app/templates")
 templates.env.globals["format_price"] = format_price
 templates.env.globals["get_stock_status"] = get_stock_status
+templates.env.globals["get_bundle_stock_status"] = get_bundle_stock_status
 templates.env.globals["get_sync_staleness"] = get_sync_staleness
+templates.env.globals["get_cx_sync_age"] = get_cx_sync_age
+templates.env.globals["calculate_cx_actual_price"] = calculate_cx_actual_price
 templates.env.globals["is_sync_stale"] = is_sync_stale
+templates.env.globals["is_admin"] = is_admin
 templates.env.globals["csrf_field_name"] = CSRF_FORM_FIELD
 templates.env.globals["condense_number"] = condense_number
 templates.env.globals["abbreviate_location"] = abbreviate_location

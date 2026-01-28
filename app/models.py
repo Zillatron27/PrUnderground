@@ -1,7 +1,8 @@
-from datetime import datetime
+from datetime import datetime, date
 from sqlalchemy import (
     Boolean,
     Column,
+    Date,
     Integer,
     String,
     Float,
@@ -9,6 +10,7 @@ from sqlalchemy import (
     ForeignKey,
     Enum as SQLEnum,
     Text,
+    UniqueConstraint,
 )
 from sqlalchemy.orm import relationship
 import enum
@@ -44,6 +46,7 @@ class User(Base):
     discord_id = Column(String(50), unique=True, nullable=True)
     fio_api_key = Column(String(256), nullable=True)  # Encrypted with Fernet (see encryption.py)
     fio_last_synced = Column(DateTime, nullable=True)  # When FIO data was last pulled
+    discord_template = Column(Text, nullable=True)  # Custom Discord copy format template
     created_at = Column(DateTime, default=datetime.utcnow)
     updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
 
@@ -107,6 +110,7 @@ class Listing(Base):
     storage_name = Column(String(100), nullable=True)  # Human-readable name (cached)
     reserve_quantity = Column(Integer, nullable=True, default=0)  # Amount to keep in stock
     available_quantity = Column(Integer, nullable=True)  # Computed: actual FIO stock - reserve
+    low_stock_threshold = Column(Integer, nullable=True, default=10)  # Custom low stock threshold
 
     user = relationship("User", back_populates="listings")
 
@@ -136,6 +140,7 @@ class Bundle(Base):
     storage_name = Column(String(100), nullable=True)    # Cached human-readable name
     available_quantity = Column(Integer, nullable=True)  # Computed for FIO_SYNC mode
     ready_quantity = Column(Integer, nullable=True)      # For MADE_TO_ORDER mode
+    low_stock_threshold = Column(Integer, nullable=True)  # Optional custom low stock threshold (None = no check)
 
     user = relationship("User", back_populates="bundles")
     items = relationship("BundleItem", back_populates="bundle", cascade="all, delete-orphan")
@@ -181,3 +186,36 @@ class Planet(Base):
     system_name = Column(String(100), nullable=True)
     is_station = Column(Integer, default=0)  # 1 for CX stations, 0 for planets
     updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+
+
+class Exchange(Base):
+    """Cached commodity exchange price data from FIO API."""
+
+    __tablename__ = "exchanges"
+
+    id = Column(Integer, primary_key=True, index=True)
+    material_ticker = Column(String(10), index=True, nullable=False)
+    exchange_code = Column(String(10), index=True, nullable=False)  # NC1, IC1, CI1, AI1, NC2
+    price_ask = Column(Float, nullable=True)  # Lowest ask price
+    price_bid = Column(Float, nullable=True)  # Highest bid price
+    price_average = Column(Float, nullable=True)  # Average/market price
+    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+
+    __table_args__ = (
+        UniqueConstraint('material_ticker', 'exchange_code', name='uix_exchange_material'),
+    )
+
+
+class UsageStats(Base):
+    """Anonymous usage statistics for admin dashboard."""
+
+    __tablename__ = "usage_stats"
+
+    id = Column(Integer, primary_key=True, index=True)
+    date = Column(Date, index=True, nullable=False)
+    metric = Column(String(50), index=True, nullable=False)
+    value = Column(Integer, default=0, nullable=False)
+
+    __table_args__ = (
+        UniqueConstraint('date', 'metric', name='uix_stats_date_metric'),
+    )

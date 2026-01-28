@@ -105,15 +105,50 @@
 
 {#
     Bundle quantity display
-    Desktop: Full number with comma formatting
-    Medium/Narrow: Condensed
+    Handles different stock modes:
+    - MANUAL: quantity or "—"
+    - UNLIMITED: ∞ (cyan)
+    - MADE_TO_ORDER: Purple badge + optional "(X ready)"
+    - FIO_SYNC: computed quantity + stock badges
 #}
 {% macro bundle_quantity_display(bundle) -%}
-{%- if bundle.quantity -%}
-    <span class="hide-medium">{{ '{:,}'.format(bundle.quantity) }}</span>
-    <span class="show-medium">{{ condense_number(bundle.quantity) }}</span>
+{%- if bundle.stock_mode.value == 'unlimited' -%}
+    <span class="qty-unlimited">∞</span>
+{%- elif bundle.stock_mode.value == 'made_to_order' -%}
+    <span class="badge badge-made-to-order">Made to Order</span>
+    {%- if bundle.ready_quantity -%}
+        <span class="qty-ready">({{ bundle.ready_quantity }} ready)</span>
+    {%- endif -%}
+{%- elif bundle.stock_mode.value == 'fio_sync' -%}
+    {%- set qty = bundle.available_quantity -%}
+    {%- if qty is not none -%}
+        <span class="hide-medium">{{ '{:,}'.format(qty) }}</span>
+        <span class="show-medium">{{ condense_number(qty) }}</span>
+        {%- if qty == 0 -%}
+            <span class="badge badge-out-of-stock hide-medium">OUT OF STOCK</span>
+            <span class="stock-dot stock-out show-medium" title="Out of stock"></span>
+        {%- elif qty <= 5 -%}
+            <span class="badge badge-low-stock hide-medium">LOW STOCK</span>
+            <span class="stock-dot stock-low show-medium" title="Low stock"></span>
+        {%- endif -%}
+    {%- else -%}
+        —
+    {%- endif -%}
 {%- else -%}
-    —
+    {# MANUAL mode (default) #}
+    {%- if bundle.quantity is not none -%}
+        <span class="hide-medium">{{ '{:,}'.format(bundle.quantity) }}</span>
+        <span class="show-medium">{{ condense_number(bundle.quantity) }}</span>
+        {%- if bundle.quantity == 0 -%}
+            <span class="badge badge-out-of-stock hide-medium">OUT OF STOCK</span>
+            <span class="stock-dot stock-out show-medium" title="Out of stock"></span>
+        {%- elif bundle.quantity <= 5 -%}
+            <span class="badge badge-low-stock hide-medium">LOW STOCK</span>
+            <span class="stock-dot stock-low show-medium" title="Low stock"></span>
+        {%- endif -%}
+    {%- else -%}
+        —
+    {%- endif -%}
 {%- endif -%}
 {%- endmacro %}
 

@@ -352,8 +352,18 @@ body.loading #global-spinner::after {
 
 .form-actions {
     display: flex;
+    flex-direction: column;
     gap: var(--space-sm);
     margin-top: var(--space-lg);
+}
+
+.form-actions-primary {
+    display: flex;
+    gap: var(--space-sm);
+}
+
+.form-actions-danger {
+    margin-top: var(--space-md);
 }
 
 /* ========================================
@@ -599,6 +609,23 @@ table tbody tr:hover {
 .badge-out-of-stock {
     background: var(--accent-red);
     color: var(--text-primary);
+}
+
+.badge-made-to-order {
+    background: var(--accent-purple);
+    color: var(--text-primary);
+}
+
+.qty-unlimited {
+    font-size: var(--text-lg);
+    font-weight: 600;
+    color: var(--accent-cyan);
+}
+
+.qty-ready {
+    font-size: var(--text-xs);
+    color: var(--text-secondary);
+    margin-left: var(--space-xs);
 }
 
 .listing-expired {
@@ -1190,6 +1217,7 @@ table tbody tr:hover {
    ======================================== */
 .price-options {
     display: flex;
+    flex-wrap: wrap;
     gap: var(--space-md);
 }
 
@@ -1200,6 +1228,7 @@ table tbody tr:hover {
     cursor: pointer;
     font-size: var(--text-sm);
     color: var(--text-secondary);
+    white-space: nowrap;
 }
 
 .radio-option input[type="radio"] {
@@ -1624,6 +1653,14 @@ html.force-desktop .nav-links {
         text-align: center;
     }
 
+    .form-actions-primary {
+        /* Keep side-by-side even on mobile for primary actions */
+    }
+
+    .form-actions-danger .btn {
+        width: 100%;
+    }
+
     /* Table action buttons */
     .actions {
         flex-direction: column;
@@ -1807,6 +1844,18 @@ html.force-desktop .nav-links {
     /* Override min-width on qty-cell for narrow */
     .qty-cell {
         min-width: 0;
+    }
+
+    /* Bundle name column - truncate to prevent horizontal overflow */
+    .col-name {
+        max-width: 80px;
+        overflow: hidden;
+        text-overflow: ellipsis;
+    }
+
+    /* Hide "(X ready)" on narrow viewport - badge is enough */
+    .qty-ready {
+        display: none;
     }
 
     /* Move button to align with section edge */

@@ -13,7 +13,7 @@ from enum import Enum
 from typing import Optional
 from sqlalchemy.orm import Session
 
-from ..models import User, Listing, Bundle, BundleItem, PriceType, ListingType
+from ..models import User, Listing, Bundle, BundleItem, PriceType, ListingType, BundleStockMode
 
 
 # Current schema version - increment when making breaking changes
@@ -151,6 +151,10 @@ def _bundle_to_dict(bundle: Bundle) -> dict:
         "notes": bundle.notes,
         "expires_at": bundle.expires_at.isoformat() + "Z" if bundle.expires_at else None,
         "items": items,
+        "stock_mode": bundle.stock_mode.value if bundle.stock_mode else "manual",
+        "storage_id": bundle.storage_id,
+        "storage_name": bundle.storage_name,
+        "ready_quantity": bundle.ready_quantity,
     }
 
 
@@ -401,6 +405,12 @@ def _dict_to_bundle(data: dict, user_id: int, db: Session) -> Optional[Bundle]:
     except ValueError:
         listing_type = ListingType.STANDING
 
+    # Parse stock_mode
+    try:
+        stock_mode = BundleStockMode(data.get("stock_mode", "manual"))
+    except ValueError:
+        stock_mode = BundleStockMode.MANUAL
+
     # Parse expires_at
     expires_at = None
     if data.get("expires_at"):
@@ -421,6 +431,10 @@ def _dict_to_bundle(data: dict, user_id: int, db: Session) -> Optional[Bundle]:
         listing_type=listing_type,
         notes=data.get("notes"),
         expires_at=expires_at,
+        stock_mode=stock_mode,
+        storage_id=data.get("storage_id"),
+        storage_name=data.get("storage_name"),
+        ready_quantity=data.get("ready_quantity"),
     )
 
     # Add bundle items
@@ -472,6 +486,22 @@ def _update_bundle_from_dict(bundle: Bundle, data: dict, db: Session) -> None:
                 pass
         else:
             bundle.expires_at = None
+
+    # Stock mode fields
+    if "stock_mode" in data:
+        try:
+            bundle.stock_mode = BundleStockMode(data["stock_mode"])
+        except ValueError:
+            pass
+
+    if "storage_id" in data:
+        bundle.storage_id = data["storage_id"]
+
+    if "storage_name" in data:
+        bundle.storage_name = data["storage_name"]
+
+    if "ready_quantity" in data:
+        bundle.ready_quantity = data["ready_quantity"]
 
     # Replace all items if provided
     if "items" in data:

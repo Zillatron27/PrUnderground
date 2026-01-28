@@ -27,6 +27,13 @@ class ListingType(enum.Enum):
     SPECIAL = "special"
 
 
+class BundleStockMode(enum.Enum):
+    MANUAL = "manual"
+    UNLIMITED = "unlimited"
+    MADE_TO_ORDER = "made_to_order"
+    FIO_SYNC = "fio_sync"
+
+
 class User(Base):
     __tablename__ = "users"
 
@@ -122,6 +129,13 @@ class Bundle(Base):
     notes = Column(Text, nullable=True)
     created_at = Column(DateTime, default=datetime.utcnow)
     updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+
+    # Stock mode and inventory tracking
+    stock_mode = Column(SQLEnum(BundleStockMode), nullable=False, default=BundleStockMode.MANUAL)
+    storage_id = Column(String(100), nullable=True)      # FIO AddressableId for FIO_SYNC mode
+    storage_name = Column(String(100), nullable=True)    # Cached human-readable name
+    available_quantity = Column(Integer, nullable=True)  # Computed for FIO_SYNC mode
+    ready_quantity = Column(Integer, nullable=True)      # For MADE_TO_ORDER mode
 
     user = relationship("User", back_populates="bundles")
     items = relationship("BundleItem", back_populates="bundle", cascade="all, delete-orphan")

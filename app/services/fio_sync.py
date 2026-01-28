@@ -9,7 +9,7 @@ import logging
 from datetime import datetime
 from sqlalchemy.orm import Session
 
-from ..models import User, Listing
+from ..models import User, Listing, Bundle, BundleStockMode
 from ..fio_client import FIOClient, extract_storage_locations
 from ..encryption import decrypt_api_key
 from .planet_sync import get_cx_station_names
@@ -78,6 +78,24 @@ async def sync_user_fio_data(user: User, db: Session, force: bool = False) -> bo
                 listing.available_quantity = max(0, actual - reserve)
             # If no storage linked or storage not found, keep existing value
             # (stale data is better than no data)
+
+        # Update FIO_SYNC bundles
+        user_bundles = db.query(Bundle).filter(
+            Bundle.user_id == user.id,
+            Bundle.stock_mode == BundleStockMode.FIO_SYNC
+        ).all()
+
+        for bundle in user_bundles:
+            if bundle.storage_id and bundle.storage_id in storage_inventory:
+                items = storage_inventory[bundle.storage_id]
+                available = None
+                for bundle_item in bundle.items:
+                    stock = items.get(bundle_item.material_ticker, 0)
+                    can_make = stock // bundle_item.quantity if bundle_item.quantity > 0 else 0
+                    if available is None or can_make < available:
+                        available = can_make
+                bundle.available_quantity = available if available is not None else 0
+            # If no storage linked or storage not found, keep existing value
 
         # Update sync timestamp
         user.fio_last_synced = datetime.utcnow()

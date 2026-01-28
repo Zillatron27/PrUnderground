@@ -4,7 +4,7 @@
 <div class="form-page">
     <h1>{% if bundle %}Edit{% else %}Create{% endif %} Bundle</h1>
 
-    <form method="post" action="{% if bundle %}/bundles/{{ bundle.id }}/edit{% else %}/bundles/new{% endif %}" class="listing-form" onsubmit="return validateBundleForm()">
+    <form method="post" action="{% if bundle %}/bundles/{{ bundle.id }}/edit{% else %}/bundles/new{% endif %}" class="listing-form" onsubmit="return validateBundleForm()" autocomplete="off">
         <input type="hidden" name="{{ csrf_field_name }}" value="{{ csrf_token }}">
 
         <div class="form-group">
@@ -75,13 +75,72 @@
 
         <hr class="form-divider">
 
-        <div class="form-row">
-            <div class="form-group">
-                <label for="quantity">Quantity Available</label>
-                <input type="number" id="quantity" name="quantity" min="1"
-                       value="{{ bundle.quantity if bundle and bundle.quantity else '' }}"
-                       placeholder="Leave blank for unlimited">
+        <div class="form-group">
+            <label>Stock Mode</label>
+            <div class="price-options">
+                <label class="radio-option">
+                    <input type="radio" name="stock_mode" value="manual"
+                           {% if not bundle or bundle.stock_mode.value == 'manual' %}checked{% endif %}
+                           onchange="toggleStockModeFields()">
+                    <span>Manual Quantity</span>
+                </label>
+                <label class="radio-option">
+                    <input type="radio" name="stock_mode" value="unlimited"
+                           {% if bundle and bundle.stock_mode.value == 'unlimited' %}checked{% endif %}
+                           onchange="toggleStockModeFields()">
+                    <span>Unlimited</span>
+                </label>
+                <label class="radio-option">
+                    <input type="radio" name="stock_mode" value="made_to_order"
+                           {% if bundle and bundle.stock_mode.value == 'made_to_order' %}checked{% endif %}
+                           onchange="toggleStockModeFields()">
+                    <span>Made to Order</span>
+                </label>
+                {% if has_fio_key %}
+                <label class="radio-option">
+                    <input type="radio" name="stock_mode" value="fio_sync"
+                           {% if bundle and bundle.stock_mode.value == 'fio_sync' %}checked{% endif %}
+                           onchange="toggleStockModeFields()">
+                    <span>FIO Sync</span>
+                </label>
+                {% endif %}
             </div>
+        </div>
+
+        <div class="form-row" id="manual-qty-fields">
+            <div class="form-group">
+                <label for="quantity">Quantity Available <span class="required">*</span></label>
+                <input type="number" id="quantity" name="quantity" min="0"
+                       value="{{ bundle.quantity if bundle and bundle.quantity else '' }}"
+                       placeholder="e.g., 10">
+            </div>
+        </div>
+
+        <div class="form-row" id="made-to-order-fields" style="display: none;">
+            <div class="form-group">
+                <label for="ready_quantity">Ready Quantity (optional)</label>
+                <input type="number" id="ready_quantity" name="ready_quantity" min="0"
+                       value="{{ bundle.ready_quantity if bundle and bundle.ready_quantity else '' }}"
+                       placeholder="How many ready now?">
+                <p class="help-text" style="margin-top: var(--space-sm);">Leave blank if none ready yet</p>
+            </div>
+        </div>
+
+        <div class="form-group fio-data-container" id="fio-sync-fields" style="display: none;">
+            <div class="fio-data-overlay fio-data-overlay-inline">
+                <div class="spinner-data spinner-sm"></div>
+                <span>Loading storages...</span>
+            </div>
+            <label for="storage_id">Inventory</label>
+            <select id="storage_id" name="storage_id" onchange="updateStorageName(); updateInventoryPreview();">
+                <option value="">Select storage...</option>
+            </select>
+            <input type="hidden" id="storage_name" name="storage_name" value="{{ bundle.storage_name if bundle else '' }}">
+            <p class="help-text" style="margin-top: var(--space-sm);">Bundle quantity will be computed from FIO inventory</p>
+            <div id="fio-inventory-preview"></div>
+        </div>
+
+        <div class="form-row">
             <div class="form-group">
                 <label for="location">Pickup Location</label>
                 <input type="text" id="location" name="location" maxlength="50"
@@ -161,12 +220,16 @@
         </div>
 
         <div class="form-actions">
-            <button type="submit" class="btn btn-primary">
-                {% if bundle %}Update{% else %}Create{% endif %} Bundle
-            </button>
-            <a href="/dashboard" class="btn btn-secondary">Cancel</a>
+            <div class="form-actions-primary">
+                <button type="submit" class="btn btn-primary">
+                    {% if bundle %}Update{% else %}Create{% endif %} Bundle
+                </button>
+                <a href="/dashboard" class="btn btn-secondary">Cancel</a>
+            </div>
             {% if bundle %}
-            <button type="button" class="btn btn-danger" onclick="deleteBundle()">Delete</button>
+            <div class="form-actions-danger">
+                <button type="button" class="btn btn-danger" onclick="deleteBundle()">Delete</button>
+            </div>
             {% endif %}
         </div>
     </form>
@@ -204,10 +267,12 @@ function addItemRow() {
     `;
     container.appendChild(row);
     itemIndex++;
+    updateInventoryPreview();
 }
 
 function removeItemRow(btn) {
     btn.closest('.bundle-item-row').remove();
+    updateInventoryPreview();
 }
 
 function toggleBundlePriceFields() {
@@ -271,6 +336,17 @@ function validateBundleForm() {
     }
 
     errorEl.style.display = 'none';
+
+    // Validate quantity for manual mode
+    const stockMode = document.querySelector('input[name="stock_mode"]:checked').value;
+    if (stockMode === 'manual') {
+        const quantityInput = document.getElementById('quantity');
+        if (!quantityInput.value || quantityInput.value.trim() === '') {
+            quantityInput.focus();
+            return false;
+        }
+    }
+
     return true;
 }
 
@@ -280,11 +356,172 @@ function deleteBundle() {
     }
 }
 
+function toggleStockModeFields() {
+    // Preserve current items before any DOM changes
+    const itemsContainer = document.getElementById('bundle-items-container');
+    const currentItems = itemsContainer.innerHTML;
+
+    const stockMode = document.querySelector('input[name="stock_mode"]:checked').value;
+    const manualFields = document.getElementById('manual-qty-fields');
+    const madeToOrderFields = document.getElementById('made-to-order-fields');
+    const fioSyncFields = document.getElementById('fio-sync-fields');
+    const quantityInput = document.getElementById('quantity');
+
+    // Hide all conditional fields
+    manualFields.style.display = 'none';
+    madeToOrderFields.style.display = 'none';
+    fioSyncFields.style.display = 'none';
+
+    // Show the relevant fields and set required attribute
+    if (stockMode === 'manual') {
+        manualFields.style.display = 'flex';
+        quantityInput.required = true;
+    } else {
+        quantityInput.required = false;
+    }
+
+    if (stockMode === 'made_to_order') {
+        madeToOrderFields.style.display = 'flex';
+    } else if (stockMode === 'fio_sync') {
+        fioSyncFields.style.display = 'block';
+        loadBundleStorages();
+    }
+
+    // Restore items if they were cleared (browser autofill interference)
+    if (!itemsContainer.children.length) {
+        itemsContainer.innerHTML = currentItems;
+    }
+}
+
+let storagesLoaded = false;
+function loadBundleStorages() {
+    if (storagesLoaded) return;
+    storagesLoaded = true;
+
+    const container = document.getElementById('fio-sync-fields');
+    const select = document.getElementById('storage_id');
+    const selectedId = '{{ bundle.storage_id if bundle else "" }}';
+
+    // Show loading spinner
+    container.classList.add('loading');
+
+    fetch('/bundles/api/storages' + (selectedId ? '?selected=' + encodeURIComponent(selectedId) : ''))
+        .then(response => response.text())
+        .then(html => {
+            select.innerHTML = html;
+            // Trigger inventory preview if editing existing bundle with storage
+            if (selectedId && select.value) {
+                updateInventoryPreview();
+            }
+        })
+        .catch(err => {
+            console.error('Failed to load storages:', err);
+        })
+        .finally(() => {
+            container.classList.remove('loading');
+        });
+}
+
+function updateStorageName() {
+    const select = document.getElementById('storage_id');
+    const nameInput = document.getElementById('storage_name');
+    const selectedOption = select.options[select.selectedIndex];
+
+    if (selectedOption && selectedOption.dataset.name) {
+        nameInput.value = selectedOption.dataset.name;
+    } else {
+        nameInput.value = '';
+    }
+}
+
+// FIO Inventory Preview
+let inventoryPreviewTimeout = null;
+
+function updateInventoryPreview() {
+    // Clear any pending timeout
+    if (inventoryPreviewTimeout) {
+        clearTimeout(inventoryPreviewTimeout);
+    }
+
+    // Debounce the preview update
+    inventoryPreviewTimeout = setTimeout(doUpdateInventoryPreview, 500);
+}
+
+function doUpdateInventoryPreview() {
+    const stockMode = document.querySelector('input[name="stock_mode"]:checked').value;
+    const previewDiv = document.getElementById('fio-inventory-preview');
+
+    // Only update if FIO Sync mode is active
+    if (stockMode !== 'fio_sync') {
+        if (previewDiv) previewDiv.innerHTML = '';
+        return;
+    }
+
+    const storageId = document.getElementById('storage_id').value;
+    if (!storageId) {
+        previewDiv.innerHTML = '';
+        return;
+    }
+
+    // Collect items from the form
+    const items = [];
+    const container = document.getElementById('bundle-items-container');
+    const itemRows = container.querySelectorAll('.bundle-item-row');
+
+    itemRows.forEach(row => {
+        const tickerInput = row.querySelector('input[name^="item_ticker_"]');
+        const qtyInput = row.querySelector('input[name^="item_qty_"]');
+
+        if (tickerInput && qtyInput && tickerInput.value.trim()) {
+            items.push({
+                ticker: tickerInput.value.trim().toUpperCase(),
+                qty: parseInt(qtyInput.value) || 1
+            });
+        }
+    });
+
+    if (items.length === 0) {
+        previewDiv.innerHTML = '';
+        return;
+    }
+
+    // Build query string
+    const params = new URLSearchParams();
+    params.append('storage_id', storageId);
+    params.append('items', JSON.stringify(items));
+
+    // Show loading state
+    previewDiv.innerHTML = '<div class="fio-loading"><div class="spinner-data spinner-sm"></div><span class="fio-loading-text">Loading FIO data...</span></div>';
+
+    // Fetch preview
+    fetch('/bundles/api/inventory-preview?' + params.toString())
+        .then(response => response.text())
+        .then(html => {
+            previewDiv.innerHTML = html;
+        })
+        .catch(err => {
+            console.error('Failed to load inventory preview:', err);
+            previewDiv.innerHTML = '<p class="help-text error-text">Failed to load inventory</p>';
+        });
+}
+
+function setupInventoryPreviewListeners() {
+    // Use event delegation for item inputs
+    const container = document.getElementById('bundle-items-container');
+    container.addEventListener('input', function(e) {
+        if (e.target.matches('input[name^="item_ticker_"], input[name^="item_qty_"]')) {
+            updateInventoryPreview();
+        }
+    });
+}
+
 // Initialize on load
 document.addEventListener('DOMContentLoaded', function() {
     toggleBundlePriceFields();
     toggleExpiryField();
     updatePricePreview();
+    toggleStockModeFields();
+    setupInventoryPreviewListeners();
 });
 </script>
 {% endblock %}

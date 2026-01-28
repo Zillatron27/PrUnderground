@@ -1,0 +1,32 @@
+{% if items %}
+<div class="inventory-preview" style="margin-top: var(--space-sm);">
+    <table class="bundle-items-table">
+        <thead>
+            <tr>
+                <th>Item</th>
+                <th>Required</th>
+                <th>In Stock</th>
+                <th>Can Make</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for item in items %}
+            <tr{% if item.is_limiting and item.can_make < 999 %} class="limiting-item"{% endif %}>
+                <td class="ticker">{{ item.ticker }}</td>
+                <td>{{ item.required }}</td>
+                <td>{{ item.in_stock }}</td>
+                <td>
+                    {{ item.can_make }}
+                    {% if item.is_limiting and item.can_make < 999 %}
+                    <span style="color: var(--accent-orange); margin-left: var(--space-xs);">&larr; limiting</span>
+                    {% endif %}
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+    <p class="help-text" style="margin-top: var(--space-sm);">
+        <strong>Can make {{ can_make }} bundle{% if can_make != 1 %}s{% endif %}</strong> with current inventory
+    </p>
+</div>
+{% endif %}

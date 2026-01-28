@@ -7,12 +7,15 @@ from sqlalchemy.orm import Session
 from typing import Optional, List
 
 from ..database import get_db
-from ..models import User, Bundle, BundleItem, ListingType
+from ..models import User, Bundle, BundleItem, ListingType, BundleStockMode
 from ..utils import clean_str
 from ..audit import log_audit, AuditAction
 from ..csrf import verify_csrf
 from ..template_utils import templates, render_template
-from ..services.planet_sync import get_all_locations_from_db
+from ..services.planet_sync import get_all_locations_from_db, get_cx_station_names
+from ..fio_client import FIOClient, extract_storage_locations
+from ..fio_cache import fio_cache
+from ..encryption import decrypt_api_key
 from .auth import get_current_user, require_user
 
 router = APIRouter()
@@ -101,6 +104,8 @@ async def new_bundle_form(
             "current_user": user,
             "bundle": None,
             "currencies": VALID_CURRENCIES,
+            "has_fio_key": bool(user.fio_api_key),
+            "stock_modes": BundleStockMode,
         },
     )
 
@@ -138,6 +143,45 @@ async def get_locations_datalist(
     )
 
 
+@router.get("/api/storages", response_class=HTMLResponse)
+async def get_storages_select(
+    request: Request,
+    db: Session = Depends(get_db),
+    selected: Optional[str] = Query(None),
+):
+    """HTMX endpoint: Get storage locations for dropdown (cached)."""
+    user = require_user(request, db)
+
+    storages = []
+    if user.fio_api_key:
+        # Check cache first
+        cached = fio_cache.get_storage_locations(user.fio_username)
+        if cached is not None:
+            storages = [s for s in cached if s["type"] in ("WAREHOUSE_STORE", "STORE")]
+        else:
+            # Fetch from FIO (decrypt API key first)
+            try:
+                decrypted_key = decrypt_api_key(user.fio_api_key)
+                client = FIOClient(api_key=decrypted_key)
+                raw_storages = await client.get_user_storage(user.fio_username)
+                sites = await client.get_user_sites(user.fio_username)
+                warehouses = await client.get_user_warehouses(user.fio_username)
+                cx_names = get_cx_station_names(db)
+                all_storages = extract_storage_locations(
+                    raw_storages, sites, warehouses, cx_names
+                )
+                fio_cache.set_storage_locations(user.fio_username, all_storages)
+                storages = [s for s in all_storages if s["type"] in ("WAREHOUSE_STORE", "STORE")]
+                await client.close()
+            except Exception:
+                pass
+
+    return templates.TemplateResponse(
+        "partials/storages_select.html",
+        {"request": request, "storages": storages, "selected": selected},
+    )
+
+
 @router.post("/new")
 async def create_bundle(
     request: Request,
@@ -151,6 +195,10 @@ async def create_bundle(
     expires_at: Optional[str] = Form(None),
     notes: Optional[str] = Form(None),
     contact_me: Optional[str] = Form(None),
+    stock_mode: str = Form("manual"),
+    storage_id: Optional[str] = Form(None),
+    storage_name: Optional[str] = Form(None),
+    ready_quantity: Optional[int] = Form(None),
     csrf_token: Optional[str] = Form(None),
     db: Session = Depends(get_db),
 ):
@@ -195,17 +243,41 @@ async def create_bundle(
         except ValueError:
             pass
 
+    # Parse stock mode
+    try:
+        bundle_stock_mode = BundleStockMode(stock_mode)
+    except ValueError:
+        bundle_stock_mode = BundleStockMode.MANUAL
+
+    # Set fields based on stock mode
+    bundle_quantity = None
+    bundle_storage_id = None
+    bundle_storage_name = None
+    bundle_ready_quantity = None
+
+    if bundle_stock_mode == BundleStockMode.MANUAL:
+        bundle_quantity = quantity
+    elif bundle_stock_mode == BundleStockMode.FIO_SYNC:
+        bundle_storage_id = clean_str(storage_id)
+        bundle_storage_name = clean_str(storage_name)
+    elif bundle_stock_mode == BundleStockMode.MADE_TO_ORDER:
+        bundle_ready_quantity = ready_quantity
+
     bundle = Bundle(
         user_id=user.id,
         name=name.strip(),
         description=clean_str(description),
-        quantity=quantity,
+        quantity=bundle_quantity,
         price=price,
         currency=currency.upper() if currency else None,
         location=clean_str(location),
         listing_type=ListingType(listing_type),
         expires_at=expires_at_dt,
         notes=clean_str(notes),
+        stock_mode=bundle_stock_mode,
+        storage_id=bundle_storage_id,
+        storage_name=bundle_storage_name,
+        ready_quantity=bundle_ready_quantity,
     )
     db.add(bundle)
     db.flush()  # Get the bundle ID before adding items
@@ -258,6 +330,8 @@ async def edit_bundle_form(
             "current_user": user,
             "bundle": bundle,
             "currencies": VALID_CURRENCIES,
+            "has_fio_key": bool(user.fio_api_key),
+            "stock_modes": BundleStockMode,
         },
     )
 
@@ -276,6 +350,10 @@ async def update_bundle(
     expires_at: Optional[str] = Form(None),
     notes: Optional[str] = Form(None),
     contact_me: Optional[str] = Form(None),
+    stock_mode: str = Form("manual"),
+    storage_id: Optional[str] = Form(None),
+    storage_name: Optional[str] = Form(None),
+    ready_quantity: Optional[int] = Form(None),
     csrf_token: Optional[str] = Form(None),
     db: Session = Depends(get_db),
 ):
@@ -326,16 +404,45 @@ async def update_bundle(
         except ValueError:
             pass
 
+    # Parse stock mode
+    try:
+        bundle_stock_mode = BundleStockMode(stock_mode)
+    except ValueError:
+        bundle_stock_mode = BundleStockMode.MANUAL
+
+    # Set fields based on stock mode
+    bundle_quantity = None
+    bundle_storage_id = None
+    bundle_storage_name = None
+    bundle_ready_quantity = None
+    bundle_available_quantity = None
+
+    if bundle_stock_mode == BundleStockMode.MANUAL:
+        bundle_quantity = quantity
+    elif bundle_stock_mode == BundleStockMode.FIO_SYNC:
+        bundle_storage_id = clean_str(storage_id)
+        bundle_storage_name = clean_str(storage_name)
+        # Keep existing available_quantity if same storage, otherwise reset
+        if bundle.storage_id == bundle_storage_id:
+            bundle_available_quantity = bundle.available_quantity
+    elif bundle_stock_mode == BundleStockMode.MADE_TO_ORDER:
+        bundle_ready_quantity = ready_quantity
+
     # Update bundle fields
     bundle.name = name.strip()
     bundle.description = clean_str(description)
-    bundle.quantity = quantity
+    bundle.quantity = bundle_quantity
     bundle.price = price
     bundle.currency = currency.upper() if currency else None
     bundle.location = clean_str(location)
     bundle.listing_type = ListingType(listing_type)
     bundle.expires_at = expires_at_dt
     bundle.notes = clean_str(notes)
+    bundle.stock_mode = bundle_stock_mode
+    bundle.storage_id = bundle_storage_id
+    bundle.storage_name = bundle_storage_name
+    bundle.ready_quantity = bundle_ready_quantity
+    bundle.available_quantity = bundle_available_quantity
 
     # Replace all items (delete old, add new)
     for old_item in bundle.items:
@@ -361,6 +468,101 @@ async def update_bundle(
     )
 
     return RedirectResponse(url="/dashboard", status_code=303)
+
+
+@router.get("/api/inventory-preview", response_class=HTMLResponse)
+async def get_inventory_preview(
+    request: Request,
+    storage_id: str = Query(...),
+    items: str = Query(...),
+    db: Session = Depends(get_db),
+):
+    """HTMX endpoint: Get inventory preview for bundle items."""
+    import json
+
+    user = require_user(request, db)
+
+    # Parse items JSON
+    try:
+        item_list = json.loads(items)
+    except json.JSONDecodeError:
+        return HTMLResponse("<p class='help-text error-text'>Invalid items format</p>")
+
+    if not item_list:
+        return HTMLResponse("")
+
+    # Get inventory from FIO cache (or fetch if needed)
+    inventory = {}
+    if user.fio_api_key:
+        # Check cached storage data first
+        cached_storage = fio_cache.get_storage(user.fio_username)
+        if cached_storage is not None:
+            # Find the specific storage and extract inventory
+            for storage in cached_storage:
+                sid = storage.get("AddressableId") or storage.get("StoreId")
+                if sid == storage_id:
+                    for inv_item in storage.get("StorageItems", []):
+                        ticker = inv_item.get("MaterialTicker", "")
+                        qty = inv_item.get("MaterialAmount", 0)
+                        if ticker:
+                            inventory[ticker] = qty
+                    break
+        else:
+            # Try to fetch from FIO
+            try:
+                decrypted_key = decrypt_api_key(user.fio_api_key)
+                client = FIOClient(api_key=decrypted_key)
+                raw_storages = await client.get_user_storage(user.fio_username)
+                await client.close()
+
+                # Cache the storage data
+                fio_cache.set_storage(user.fio_username, raw_storages)
+
+                # Find the specific storage and extract inventory
+                for storage in raw_storages:
+                    sid = storage.get("AddressableId") or storage.get("StoreId")
+                    if sid == storage_id:
+                        for inv_item in storage.get("StorageItems", []):
+                            ticker = inv_item.get("MaterialTicker", "")
+                            qty = inv_item.get("MaterialAmount", 0)
+                            if ticker:
+                                inventory[ticker] = qty
+                        break
+            except Exception:
+                pass
+
+    # Calculate availability for each item
+    preview_data = []
+    min_can_make = None
+
+    for item in item_list:
+        ticker = item.get("ticker", "").upper()
+        required = item.get("qty", 1)
+        in_stock = inventory.get(ticker, 0)
+        can_make = in_stock // required if required > 0 else 0
+
+        preview_data.append({
+            "ticker": ticker,
+            "required": required,
+            "in_stock": in_stock,
+            "can_make": can_make,
+        })
+
+        if min_can_make is None or can_make < min_can_make:
+            min_can_make = can_make
+
+    # Mark limiting items (only meaningful with multiple items)
+    for item in preview_data:
+        item["is_limiting"] = len(preview_data) > 1 and item["can_make"] == min_can_make
+
+    return templates.TemplateResponse(
+        "partials/bundle_inventory_preview.html",
+        {
+            "request": request,
+            "items": preview_data,
+            "can_make": min_can_make or 0,
+        },
+    )
 
 
 @router.post("/{bundle_id}/delete")

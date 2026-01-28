@@ -29,7 +29,7 @@ from .services.material_sync import sync_materials, is_material_sync_needed
 from .services.planet_sync import sync_planets, is_planet_sync_needed
 
 # App version - single source of truth
-__version__ = "1.0.3"
+__version__ = "1.0.4"
 
 # Configure logging
 logging.basicConfig(

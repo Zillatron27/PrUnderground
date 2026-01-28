@@ -15,10 +15,10 @@
             <p class="member-since">Member since {{ profile_user.created_at.strftime('%B %Y') }}</p>
         </div>
         <div class="profile-actions">
+            {% if current_user and current_user.id == profile_user.id %}
             <button class="btn btn-secondary" id="copy-discord-btn" onclick="copyDiscordFormat()">
                 Copy for Discord
             </button>
-            {% if current_user and current_user.id == profile_user.id %}
             <a href="/dashboard" class="btn btn-primary">Edit Listings</a>
             {% endif %}
         </div>

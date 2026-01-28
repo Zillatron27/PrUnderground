@@ -2,7 +2,7 @@
 
 A community trade registry for [Prosperous Universe](https://prosperousuniverse.com/) players. List what you sell, find what you need.
 
-📈 Live at https://prunderground.app — no setup required, just log in with your FIO key.
+📈** Live at https://prunderground.app — no setup required, just log in with your FIO key.**
 
 ## What is this?
 

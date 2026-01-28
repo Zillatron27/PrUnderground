@@ -2,6 +2,8 @@
 
 A community trade registry for [Prosperous Universe](https://prosperousuniverse.com/) players. List what you sell, find what you need.
 
+📈 Live at https://prunderground.app — no setup required, just log in with your FIO key.
+
 ## What is this?
 
 Discord trading channels aren't great for finding buyers and sellers off market - messages scroll away, searches are of questionable value and not *everyone* wants to make an elaborate spreadsheet.

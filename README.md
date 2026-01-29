@@ -20,11 +20,11 @@ You *can* run it just for yourself as a personal storefront, but the real value 
 
 - **FIO Integration** - Login with your FIO username and API key. We pull your company info, bases, and storage locations automatically. Data syncs on login and refreshes on demand.
 - **Live Inventory** - Link listings to your actual storage. Shows "FIO-real-time" availability (stock minus your defined reserve).
-- **Flexible Pricing** - Set absolute prices, CX-relative prices (percentage or fixed offset from Ask), or just "Contact me" for negotiated deals.
+- **Flexible Pricing** - Set absolute prices, CX-relative prices (percentage or fixed offset from Ask), or just "Contact me" for negotiated deals. CX prices sync automatically every 30 minutes.
 - **Bundles** - Sell multiple items together as a package at a single price.
 - **Expiring Deals** - Mark listings as specials with optional expiry dates. Expired listings auto-hide.
 - **Public Profiles** - Shareable link to your listings page. Send it to your corp, pin it in Discord, whatever.
-- **Copy to Discord** - One click generates a formatted message (grouped by location) ready to paste into any channel.
+- **Copy to Discord** - One click generates a formatted message (grouped by location) ready to paste into any channel. Customize the format with your own template.
 - **Browse & Search** - Filter by material or location. Multi-column sorting with visual sort builder.
 - **Import/Export** - Backup and restore your listings and bundles as JSON. Extensible format for future integrations.
 - **APEX Embed Support** - Embed PrUnderground in Refined PrUn's XIT WEB tiles with full authentication.
@@ -104,6 +104,12 @@ If upgrading an existing installation, run any new migration scripts:
 python scripts/add_bundle_tables.py
 python scripts/add_cx_absolute_column.py
 python scripts/encrypt_existing_keys.py  # v1.0.3: Encrypt FIO API keys at rest
+
+# v1.0.5 migrations:
+python scripts/add_low_stock_threshold.py
+python scripts/add_discord_template.py
+python scripts/add_exchange_table.py
+python scripts/add_usage_stats.py
 ```
 
 ## Tech Stack
@@ -121,8 +127,9 @@ python scripts/encrypt_existing_keys.py  # v1.0.3: Encrypt FIO API keys at rest
 - [x] Multi-column sorting
 - [x] CX absolute offset pricing
 - [x] Mobile UI improvements
-- [ ] Discord integration
-- [ ] Custom copy templates
+- [x] Custom Discord templates
+- [x] CX price display with auto-sync
+- [ ] Discord bot integration
 - [ ] Multi-community support
 
 ## Contributing

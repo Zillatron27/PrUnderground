@@ -131,6 +131,76 @@
     </section>
 
     <section class="account-section">
+        <h2>Material Tile Appearance</h2>
+        <p class="section-description">
+            Customize how material tiles are displayed throughout the app.
+        </p>
+
+        <div class="theme-selector">
+            {# Color Palette Selection #}
+            <div class="theme-section">
+                <div class="theme-section-label">Color Palette</div>
+                <div class="palette-options">
+                    <label class="palette-option">
+                        <input type="radio" name="palette" value="refined-prun">
+                        <span class="palette-name">Refined PrUn</span>
+                    </label>
+                    <label class="palette-option">
+                        <input type="radio" name="palette" value="prun-default">
+                        <span class="palette-name">PrUn Default</span>
+                    </label>
+                    <label class="palette-option">
+                        <input type="radio" name="palette" value="high-contrast">
+                        <span class="palette-name">High Contrast</span>
+                    </label>
+                    <label class="palette-option">
+                        <input type="radio" name="palette" value="monochrome">
+                        <span class="palette-name">Monochrome</span>
+                    </label>
+                </div>
+            </div>
+
+            {# Tile Style Selection #}
+            <div class="theme-section">
+                <div class="theme-section-label">Tile Style</div>
+                <div class="style-options">
+                    <label class="style-option">
+                        <input type="radio" name="tile-style" value="filled">
+                        <span class="style-radio-dot"></span>
+                        <div class="style-content">
+                            <div class="style-name">Filled</div>
+                            <div class="style-desc">Solid background with gradient</div>
+                        </div>
+                    </label>
+                    <label class="style-option">
+                        <input type="radio" name="tile-style" value="lite">
+                        <span class="style-radio-dot"></span>
+                        <div class="style-content">
+                            <div class="style-name">Lite</div>
+                            <div class="style-desc">Transparent with colored underline</div>
+                        </div>
+                    </label>
+                </div>
+            </div>
+
+            {# Live Preview #}
+            <div class="theme-live-preview">
+                <div class="theme-live-preview-label">Preview</div>
+                <div class="theme-live-preview-tiles">
+                    <span class="mat-tile mat-tile-agricultural-products">GRN</span>
+                    <span class="mat-tile mat-tile-consumables-basic">RAT</span>
+                    <span class="mat-tile mat-tile-fuels">FF</span>
+                    <span class="mat-tile mat-tile-liquids">H2O</span>
+                    <span class="mat-tile mat-tile-plastics">PE</span>
+                    <span class="mat-tile mat-tile-metals">FE</span>
+                    <span class="mat-tile mat-tile-construction-materials">MCG</span>
+                    <span class="mat-tile mat-tile-electronic-parts">SAR</span>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <section class="account-section">
         <h2>Import / Export</h2>
         <div class="data-management-grid">
             <div class="data-card">

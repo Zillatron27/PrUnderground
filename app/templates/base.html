@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="en" class="{{ display_classes|default('') }}">
+<html lang="en" class="{{ display_classes|default('') }}" data-theme="refined-prun">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -7,6 +7,15 @@
     <link rel="icon" type="image/svg+xml" href="/static/favicon.svg">
     <link rel="stylesheet" href="/static/css/style.css?v={{ static_version('css/style.css') }}">
     <script src="https://unpkg.com/htmx.org@1.9.10"></script>
+    <script>
+        // Apply theme and tile style from localStorage before page renders (prevents flash)
+        (function() {
+            var theme = localStorage.getItem('pru-theme') || 'refined-prun';
+            document.documentElement.setAttribute('data-theme', theme);
+            var tileStyle = localStorage.getItem('pru-tile-style') || 'filled';
+            document.documentElement.setAttribute('data-tile-style', tileStyle);
+        })();
+    </script>
 </head>
 <body>
     <nav class="navbar">

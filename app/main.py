@@ -25,14 +25,14 @@ from .utils import format_price
 from .audit import AuditLog, log_audit, AuditAction  # Import to register model
 from .template_utils import templates, render_template
 from .services.fio_sync import sync_user_fio_data, get_sync_staleness
-from .services.material_sync import sync_materials, is_material_sync_needed
+from .services.material_sync import sync_materials, is_material_sync_needed, get_material_category_map
 from .services.planet_sync import sync_planets, is_planet_sync_needed
 from .services.cx_sync import get_cx_prices_bulk, get_sync_age_string as get_cx_sync_age
 from .services.telemetry import increment_stat, Metrics
 from .scheduler import start_scheduler, stop_scheduler
 
 # App version - single source of truth
-__version__ = "1.0.5"
+__version__ = "1.1.0"
 
 # Configure logging
 logging.basicConfig(
@@ -174,6 +174,9 @@ async def dashboard(request: Request, db: Session = Depends(get_db)):
     cx_prices = get_cx_prices_bulk(db)
     cx_sync_age = get_cx_sync_age(db)
 
+    # Get material category mapping for colored tickers
+    material_categories = get_material_category_map(db)
+
     return render_template(
         request,
         "dashboard.html",
@@ -187,6 +190,7 @@ async def dashboard(request: Request, db: Session = Depends(get_db)):
             "now": datetime.utcnow(),
             "cx_prices": cx_prices,
             "cx_sync_age": cx_sync_age,
+            "material_categories": material_categories,
         },
     )
 
@@ -225,10 +229,11 @@ async def dashboard_suggestions(request: Request, db: Session = Depends(get_db))
     """HTMX endpoint: Fetch production suggestions (cached)."""
     user = require_user(request, db)
     suggestions = await fetch_suggestions(user)
+    material_categories = get_material_category_map(db)
 
     return templates.TemplateResponse(
         "partials/dashboard_suggestions.html",
-        {"request": request, "suggestions": suggestions},
+        {"request": request, "suggestions": suggestions, "material_categories": material_categories},
     )
 
 
@@ -261,6 +266,7 @@ async def dashboard_inventory(request: Request, db: Session = Depends(get_db)):
             }
 
     cx_prices = get_cx_prices_bulk(db)
+    material_categories = get_material_category_map(db)
 
     return render_template(
         request,
@@ -272,6 +278,7 @@ async def dashboard_inventory(request: Request, db: Session = Depends(get_db)):
             "format_price": format_price,
             "now": datetime.utcnow(),
             "cx_prices": cx_prices,
+            "material_categories": material_categories,
         },
     )
 

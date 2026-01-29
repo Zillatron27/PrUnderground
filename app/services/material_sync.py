@@ -160,3 +160,12 @@ def get_material_categories(db: Session) -> list[str]:
         .all()
     )
     return [c[0] for c in categories]
+
+
+def get_material_category_map(db: Session) -> dict[str, str]:
+    """
+    Get a mapping of material ticker -> category_name.
+    Used for rendering material tiles with category-based colors.
+    """
+    materials = db.query(Material.ticker, Material.category_name).all()
+    return {m.ticker: m.category_name for m in materials if m.category_name}

@@ -10,6 +10,7 @@ from ..utils import format_price
 from ..services.fio_sync import get_sync_staleness
 from ..services.discord_format import render_discord
 from ..services.cx_sync import get_cx_prices_bulk, get_sync_age_string as get_cx_sync_age
+from ..services.material_sync import get_material_category_map
 from ..services.telemetry import increment_stat, Metrics
 from ..template_utils import templates, render_template
 from .auth import get_current_user
@@ -49,6 +50,9 @@ async def public_profile(
     cx_prices = get_cx_prices_bulk(db)
     cx_sync_age = get_cx_sync_age(db)
 
+    # Get material category mapping for colored tickers
+    material_categories = get_material_category_map(db)
+
     return render_template(
         request,
         "profile/public.html",
@@ -61,6 +65,7 @@ async def public_profile(
             "current_user": current_user,
             "cx_prices": cx_prices,
             "cx_sync_age": cx_sync_age,
+            "material_categories": material_categories,
         },
     )
 

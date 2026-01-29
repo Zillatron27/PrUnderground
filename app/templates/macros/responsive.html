@@ -14,11 +14,18 @@
 } %}
 
 {#
-    Material ticker display
-    Always bold, monospace, cyan - same at all sizes
+    Material ticker display with category colors
+    Renders as a clickable tile linking to browse filtered by material
+    category: Material category name (e.g., "Agricultural Products")
+    link: If true, render as clickable <a> element
 #}
-{% macro material_ticker(ticker) -%}
-<span class="ticker">{{ ticker }}</span>
+{% macro material_ticker(ticker, category=None, link=True) -%}
+{%- set cat_slug = (category|lower|replace(' ', '-')|replace('(', '')|replace(')', '')) if category else 'default' -%}
+{%- if link -%}
+<a href="/listings?material={{ ticker }}" class="mat-tile mat-tile-{{ cat_slug }}">{{ ticker }}</a>
+{%- else -%}
+<span class="mat-tile mat-tile-{{ cat_slug }}">{{ ticker }}</span>
+{%- endif -%}
 {%- endmacro %}
 
 {#
@@ -79,28 +86,51 @@
 {%- endmacro %}
 
 {#
+    Status badge for dedicated STATUS column (wide view, 720px+)
+    Shows full text badge: IN STOCK, LOW, OUT
+    Note: Individual material listings don't have stock_mode (unlimited/MTO are bundle-only)
+#}
+{% macro status_badge(listing) -%}
+{%- set status = get_stock_status(listing) -%}
+{%- if status == 'out' -%}
+    <span class="status-badge out" title="Out of stock">OUT</span>
+{%- elif status == 'low' -%}
+    <span class="status-badge low" title="Low stock">LOW</span>
+{%- else -%}
+    <span class="status-badge instock" title="In stock">IN STOCK</span>
+{%- endif -%}
+{%- endmacro %}
+
+{#
+    Status dot for medium view (450-720px)
+    Shows colored dot indicator only
+#}
+{% macro status_dot(listing) -%}
+{%- set status = get_stock_status(listing) -%}
+{%- if status == 'out' -%}
+    <span class="status-dot out" title="Out of stock"></span>
+{%- elif status == 'low' -%}
+    <span class="status-dot low" title="Low stock"></span>
+{%- else -%}
+    <span class="status-dot instock" title="In stock"></span>
+{%- endif -%}
+{%- endmacro %}
+
+{#
     Quantity display with stock status
-    Desktop: Number + text badge (OUT OF STOCK, LOW STOCK)
-    Medium/Narrow: Number + color dot indicator
+    Wide/Medium: Neutral color (badge/dot handles status)
+    Narrow (<450px): Colored text (column hidden)
 #}
 {% macro quantity_display(listing) -%}
 {%- set qty = listing.available_quantity if listing.available_quantity is not none else listing.quantity -%}
 {%- set status = get_stock_status(listing) -%}
-{%- set qty_class = 'qty-out' if status == 'out' else ('qty-low' if status == 'low' else 'qty-ok') -%}
-<span class="qty-value {{ qty_class }}">
-    {%- if qty is not none -%}
-        {{ '{:,}'.format(qty) }}
-    {%- else -%}
-        —
-    {%- endif -%}
+{%- set qty_class_narrow = 'qty-out' if status == 'out' else ('qty-low' if status == 'low' else 'qty-ok') -%}
+<span class="qty-value qty-neutral hide-narrow">
+    {%- if qty is not none -%}{{ '{:,}'.format(qty) }}{%- else -%}—{%- endif -%}
 </span>
-{%- if status == 'out' -%}
-    <span class="badge badge-out-of-stock hide-medium">OUT OF STOCK</span>
-    <span class="stock-dot stock-out show-medium" title="Out of stock"></span>
-{%- elif status == 'low' -%}
-    <span class="badge badge-low-stock hide-medium">LOW STOCK</span>
-    <span class="stock-dot stock-low show-medium" title="Low stock"></span>
-{%- endif -%}
+<span class="qty-value {{ qty_class_narrow }} show-narrow">
+    {%- if qty is not none -%}{{ '{:,}'.format(qty) }}{%- else -%}—{%- endif -%}
+</span>
 {%- endmacro %}
 
 {#
@@ -118,50 +148,95 @@
 {%- endmacro %}
 
 {#
+    Bundle status badge for STATUS column (wide view, 720px+)
+    Handles stock_mode variants:
+    - unlimited → "∞" badge (cyan)
+    - made_to_order → "MTO" badge (purple)
+    - fio_sync/manual with qty=0 → "OUT" badge (red)
+    - fio_sync/manual with low qty → "LOW" badge (orange)
+    - fio_sync/manual with normal qty → "IN STOCK" badge (green)
+#}
+{% macro bundle_status_badge(bundle) -%}
+{%- set status = get_bundle_stock_status(bundle) -%}
+{%- if bundle.stock_mode.value == 'unlimited' -%}
+    <span class="status-badge unlimited" title="Unlimited availability">∞</span>
+{%- elif bundle.stock_mode.value == 'made_to_order' -%}
+    <span class="status-badge mto" title="Made to Order">MTO</span>
+{%- elif status == 'out' -%}
+    <span class="status-badge out" title="Out of stock">OUT</span>
+{%- elif status == 'low' -%}
+    <span class="status-badge low" title="Low stock">LOW</span>
+{%- else -%}
+    <span class="status-badge instock" title="In stock">IN STOCK</span>
+{%- endif -%}
+{%- endmacro %}
+
+{#
+    Bundle status dot for medium view (450-720px)
+    Same colors as badge, compact display
+#}
+{% macro bundle_status_dot(bundle) -%}
+{%- set status = get_bundle_stock_status(bundle) -%}
+{%- if bundle.stock_mode.value == 'unlimited' -%}
+    <span class="status-dot unlimited" title="Unlimited availability"></span>
+{%- elif bundle.stock_mode.value == 'made_to_order' -%}
+    <span class="status-dot mto" title="Made to Order"></span>
+{%- elif status == 'out' -%}
+    <span class="status-dot out" title="Out of stock"></span>
+{%- elif status == 'low' -%}
+    <span class="status-dot low" title="Low stock"></span>
+{%- else -%}
+    <span class="status-dot instock" title="In stock"></span>
+{%- endif -%}
+{%- endmacro %}
+
+{#
     Bundle quantity display
     Handles different stock modes:
     - MANUAL: quantity or "—"
-    - UNLIMITED: ∞ (cyan)
-    - MADE_TO_ORDER: Purple badge + optional "(X ready)"
-    - FIO_SYNC: computed quantity + stock badges
-    Uses get_bundle_stock_status() for threshold-aware stock badges.
+    - UNLIMITED: ∞ (cyan) for narrow view, neutral for wide/medium
+    - MADE_TO_ORDER: "(X ready)" with tooltip for narrow view, neutral for wide/medium
+    - FIO_SYNC: computed quantity
+
+    Wide/Medium: Neutral color (STATUS column handles status display)
+    Narrow (<450px): Colored text (STATUS column hidden)
 #}
 {% macro bundle_quantity_display(bundle) -%}
 {%- set status = get_bundle_stock_status(bundle) -%}
 {%- if bundle.stock_mode.value == 'unlimited' -%}
-    <span class="qty-unlimited">∞</span>
+    {# Wide/Medium: neutral ∞, Narrow: colored ∞ #}
+    <span class="qty-value qty-neutral hide-narrow">∞</span>
+    <span class="qty-value qty-unlimited show-narrow">∞</span>
 {%- elif bundle.stock_mode.value == 'made_to_order' -%}
-    <span class="badge badge-made-to-order">Made to Order</span>
+    {# Show (X) or (X ready) with tooltip #}
     {%- if bundle.ready_quantity -%}
-        <span class="qty-ready">({{ bundle.ready_quantity }} ready)</span>
+        <span class="qty-value qty-neutral hide-narrow" title="{{ bundle.ready_quantity }} units ready to ship">({{ bundle.ready_quantity }})</span>
+        <span class="qty-value qty-mto show-narrow" title="{{ bundle.ready_quantity }} units ready to ship">({{ bundle.ready_quantity }})</span>
+    {%- else -%}
+        <span class="qty-value qty-neutral hide-narrow" title="Made to order - contact seller">—</span>
+        <span class="qty-value qty-mto show-narrow" title="Made to order - contact seller">—</span>
     {%- endif -%}
 {%- elif bundle.stock_mode.value == 'fio_sync' -%}
     {%- set qty = bundle.available_quantity -%}
     {%- if qty is not none -%}
-        <span class="hide-medium">{{ '{:,}'.format(qty) }}</span>
-        <span class="show-medium">{{ condense_number(qty) }}</span>
-        {%- if status == 'out' -%}
-            <span class="badge badge-out-of-stock hide-medium">OUT OF STOCK</span>
-            <span class="stock-dot stock-out show-medium" title="Out of stock"></span>
-        {%- elif status == 'low' -%}
-            <span class="badge badge-low-stock hide-medium">LOW STOCK</span>
-            <span class="stock-dot stock-low show-medium" title="Low stock"></span>
-        {%- endif -%}
+        {%- set qty_class_narrow = 'qty-out' if status == 'out' else ('qty-low' if status == 'low' else 'qty-ok') -%}
+        <span class="qty-value qty-neutral hide-narrow">
+            <span class="hide-medium">{{ '{:,}'.format(qty) }}</span>
+            <span class="show-medium">{{ condense_number(qty) }}</span>
+        </span>
+        <span class="qty-value {{ qty_class_narrow }} show-narrow">{{ condense_number(qty) }}</span>
     {%- else -%}
         —
     {%- endif -%}
 {%- else -%}
     {# MANUAL mode (default) #}
     {%- if bundle.quantity is not none -%}
-        <span class="hide-medium">{{ '{:,}'.format(bundle.quantity) }}</span>
-        <span class="show-medium">{{ condense_number(bundle.quantity) }}</span>
-        {%- if status == 'out' -%}
-            <span class="badge badge-out-of-stock hide-medium">OUT OF STOCK</span>
-            <span class="stock-dot stock-out show-medium" title="Out of stock"></span>
-        {%- elif status == 'low' -%}
-            <span class="badge badge-low-stock hide-medium">LOW STOCK</span>
-            <span class="stock-dot stock-low show-medium" title="Low stock"></span>
-        {%- endif -%}
+        {%- set qty_class_narrow = 'qty-out' if status == 'out' else ('qty-low' if status == 'low' else 'qty-ok') -%}
+        <span class="qty-value qty-neutral hide-narrow">
+            <span class="hide-medium">{{ '{:,}'.format(bundle.quantity) }}</span>
+            <span class="show-medium">{{ condense_number(bundle.quantity) }}</span>
+        </span>
+        <span class="qty-value {{ qty_class_narrow }} show-narrow">{{ condense_number(bundle.quantity) }}</span>
     {%- else -%}
         —
     {%- endif -%}

@@ -8,7 +8,7 @@ from ..database import get_db
 from ..models import User, Listing, PriceType, ListingType
 from ..fio_client import FIOClient, extract_active_production, extract_storage_locations
 from ..fio_cache import fio_cache
-from ..services.material_sync import get_all_materials_from_db, get_material_categories
+from ..services.material_sync import get_all_materials_from_db, get_material_categories, get_material_category_map
 from ..services.planet_sync import get_all_locations_from_db, get_cx_station_names
 from ..utils import format_price, clean_str
 from ..services.fio_sync import get_sync_staleness
@@ -129,6 +129,9 @@ async def browse_listings(
     cx_prices = get_cx_prices_bulk(db)
     cx_sync_age = get_cx_sync_age(db)
 
+    # Get material category mapping for colored tickers
+    material_categories = get_material_category_map(db)
+
     # Track page view
     increment_stat(db, Metrics.LISTINGS_VIEWED)
 
@@ -146,6 +149,7 @@ async def browse_listings(
             "sort_param": sort or "",
             "cx_prices": cx_prices,
             "cx_sync_age": cx_sync_age,
+            "material_categories": material_categories,
         },
     )
 

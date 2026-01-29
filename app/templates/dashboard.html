@@ -1,5 +1,5 @@
 {% extends "base.html" %}
-{% from "macros/responsive.html" import material_ticker, price_display, cx_location, bundle_price_display, bundle_quantity_display, date_display %}
+{% from "macros/responsive.html" import material_ticker, quantity_display, status_badge, status_dot, price_display, cx_location, bundle_price_display, bundle_quantity_display, bundle_status_badge, bundle_status_dot, date_display %}
 
 {% block content %}
 <div class="dashboard">
@@ -56,6 +56,7 @@
                 <thead>
                     <tr>
                         <th class="col-material"><span class="hide-medium">Material</span><span class="show-medium">Mat</span></th>
+                        <th class="col-status">Status</th>
                         <th class="col-quantity">Qty</th>
                         <th class="col-price">Price</th>
                         <th class="col-location"><span class="hide-medium">Location</span><span class="show-medium">Loc</span></th>
@@ -69,14 +70,12 @@
                     {% for listing in listings %}
                     {% set is_expired = listing.expires_at and listing.expires_at < now %}
                     <tr class="{% if is_expired %}listing-expired{% endif %}">
-                        <td class="col-material">{{ material_ticker(listing.material_ticker) }}</td>
-                        <td class="col-quantity">
-                            {% if listing.quantity %}
-                                {{ listing.quantity }}
-                            {% else %}
-                                <span class="fio-loading-inline"><span class="spinner-data spinner-sm"></span></span>
-                            {% endif %}
+                        <td class="col-material">{{ material_ticker(listing.material_ticker, material_categories.get(listing.material_ticker)) }}</td>
+                        <td class="col-status">
+                            <span class="status-wide">{{ status_badge(listing) }}</span>
+                            <span class="status-medium">{{ status_dot(listing) }}</span>
                         </td>
+                        <td class="col-quantity qty-cell">{{ quantity_display(listing) }}</td>
                         <td class="col-price">{{ price_display(listing, cx_prices) }}</td>
                         <td class="col-location">{{ cx_location(listing.storage_name or listing.location) }}</td>
                         <td class="col-type">
@@ -98,7 +97,7 @@
                         </td>
                         <td class="col-updated">{{ date_display(listing.updated_at) }}</td>
                         <td class="col-actions actions">
-                            <a href="/listings/{{ listing.id }}/edit" class="btn btn-sm">Edit</a>
+                            <a href="/listings/{{ listing.id }}/edit" class="btn btn-sm btn-edit">Edit</a>
                             <form action="/listings/{{ listing.id }}/delete" method="post" style="display:inline">
                                 <input type="hidden" name="{{ csrf_field_name }}" value="{{ csrf_token }}">
                                 <button type="submit" class="btn btn-sm btn-danger"
@@ -128,6 +127,7 @@
             <thead>
                 <tr>
                     <th class="col-name">Name</th>
+                    <th class="col-status">Status</th>
                     <th class="col-items">Items</th>
                     <th class="col-quantity">Qty</th>
                     <th class="col-price">Price</th>
@@ -141,7 +141,11 @@
                 {% for bundle in bundles %}
                 {% set is_expired = bundle.expires_at and bundle.expires_at < now %}
                 <tr class="{% if is_expired %}listing-expired{% endif %}">
-                    <td class="col-name"><strong>{{ bundle.name }}</strong></td>
+                    <td class="col-name" title="{{ bundle.name }}"><strong>{{ bundle.name }}</strong></td>
+                    <td class="col-status">
+                        <span class="status-wide">{{ bundle_status_badge(bundle) }}</span>
+                        <span class="status-medium">{{ bundle_status_dot(bundle) }}</span>
+                    </td>
                     <td class="col-items">{{ bundle.items|length }}</td>
                     <td class="col-quantity">{{ bundle_quantity_display(bundle) }}</td>
                     <td class="col-price">{{ bundle_price_display(bundle) }}</td>
@@ -162,7 +166,7 @@
                     </td>
                     <td class="col-updated">{{ date_display(bundle.updated_at) }}</td>
                     <td class="col-actions actions">
-                        <a href="/bundles/{{ bundle.id }}/edit" class="btn btn-sm">Edit</a>
+                        <a href="/bundles/{{ bundle.id }}/edit" class="btn btn-sm btn-edit">Edit</a>
                         <form action="/bundles/{{ bundle.id }}/delete" method="post" style="display:inline">
                             <input type="hidden" name="{{ csrf_field_name }}" value="{{ csrf_token }}">
                             <button type="submit" class="btn btn-sm btn-danger"

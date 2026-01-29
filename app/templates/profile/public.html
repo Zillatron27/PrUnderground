@@ -1,5 +1,5 @@
 {% extends "base.html" %}
-{% from "macros/responsive.html" import material_ticker, quantity_display, price_display, cx_location, bundle_price_display, date_display %}
+{% from "macros/responsive.html" import material_ticker, quantity_display, status_badge, status_dot, price_display, cx_location, bundle_price_display, bundle_quantity_display, bundle_status_badge, bundle_status_dot, date_display %}
 
 {% block content %}
 <div class="profile-page">
@@ -38,6 +38,7 @@
             <thead>
                 <tr>
                     <th class="col-material">Material</th>
+                    <th class="col-status">Status</th>
                     <th class="col-quantity">Qty</th>
                     <th class="col-price">Price</th>
                     <th class="col-location">Location</th>
@@ -49,7 +50,11 @@
             <tbody>
                 {% for listing in listings %}
                 <tr>
-                    <td class="col-material">{{ material_ticker(listing.material_ticker) }}</td>
+                    <td class="col-material">{{ material_ticker(listing.material_ticker, material_categories.get(listing.material_ticker)) }}</td>
+                    <td class="col-status">
+                        <span class="status-wide">{{ status_badge(listing) }}</span>
+                        <span class="status-medium">{{ status_dot(listing) }}</span>
+                    </td>
                     <td class="col-quantity qty-cell">{{ quantity_display(listing) }}</td>
                     <td class="col-price">{{ price_display(listing, cx_prices) }}</td>
                     <td class="col-location">{{ cx_location(listing.storage_name or listing.location) }}</td>
@@ -80,7 +85,9 @@
             <thead>
                 <tr>
                     <th class="col-name">Name</th>
+                    <th class="col-status">Status</th>
                     <th class="col-items">Items</th>
+                    <th class="col-quantity">Qty</th>
                     <th class="col-price">Price</th>
                     <th class="col-location">Location</th>
                     <th class="col-updated">Updated</th>
@@ -90,8 +97,13 @@
             <tbody>
                 {% for bundle in bundles %}
                 <tr>
-                    <td class="col-name"><strong>{{ bundle.name }}</strong></td>
+                    <td class="col-name" title="{{ bundle.name }}"><strong>{{ bundle.name }}</strong></td>
+                    <td class="col-status">
+                        <span class="status-wide">{{ bundle_status_badge(bundle) }}</span>
+                        <span class="status-medium">{{ bundle_status_dot(bundle) }}</span>
+                    </td>
                     <td class="col-items">{{ bundle.items|length }}</td>
+                    <td class="col-quantity">{{ bundle_quantity_display(bundle) }}</td>
                     <td class="col-price">{{ bundle_price_display(bundle) }}</td>
                     <td class="col-location">{{ cx_location(bundle.location) }}</td>
                     <td class="col-updated">{{ date_display(bundle.updated_at) }}</td>

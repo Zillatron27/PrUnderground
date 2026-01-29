@@ -1,34 +1,59 @@
 {% from "macros/responsive.html" import material_ticker, price_display, cx_location, date_display, dashboard_qty %}
 {% for listing in listings %}
 {% set is_expired = listing.expires_at and listing.expires_at < now %}
+{# Calculate stock status for this listing #}
+{% set stock_status = 'ok' %}
+{% set threshold = listing.low_stock_threshold if listing.low_stock_threshold is not none else 10 %}
+{% if listing.id in listing_inventory %}
+    {% set inv = listing_inventory[listing.id] %}
+    {% if inv.available == 0 %}
+        {% set stock_status = 'out' %}
+    {% elif inv.available <= threshold %}
+        {% set stock_status = 'low' %}
+    {% endif %}
+{% elif listing.available_quantity is not none %}
+    {% if listing.available_quantity == 0 %}
+        {% set stock_status = 'out' %}
+    {% elif listing.available_quantity <= threshold %}
+        {% set stock_status = 'low' %}
+    {% endif %}
+{% endif %}
 <tr class="{% if is_expired %}listing-expired{% endif %}" data-listing-id="{{ listing.id }}">
-    <td class="col-material">{{ material_ticker(listing.material_ticker) }}</td>
-    <td class="col-quantity">
+    <td class="col-material">{{ material_ticker(listing.material_ticker, material_categories.get(listing.material_ticker)) }}</td>
+    <td class="col-status">
+        <span class="status-wide">
+            {% if stock_status == 'out' %}
+                <span class="status-badge out" title="Out of stock">OUT</span>
+            {% elif stock_status == 'low' %}
+                <span class="status-badge low" title="Low stock">LOW</span>
+            {% else %}
+                <span class="status-badge instock" title="In stock">IN STOCK</span>
+            {% endif %}
+        </span>
+        <span class="status-medium">
+            {% if stock_status == 'out' %}
+                <span class="status-dot out" title="Out of stock"></span>
+            {% elif stock_status == 'low' %}
+                <span class="status-dot low" title="Low stock"></span>
+            {% else %}
+                <span class="status-dot instock" title="In stock"></span>
+            {% endif %}
+        </span>
+    </td>
+    <td class="col-quantity qty-cell">
         {% if listing.id in listing_inventory %}
             {% set inv = listing_inventory[listing.id] %}
-            {% set qty_class = 'qty-ok' %}
-            {% set stock_badge = '' %}
-            {% set stock_status = '' %}
-            {% set threshold = listing.low_stock_threshold if listing.low_stock_threshold is not none else 10 %}
-            {% if inv.available == 0 %}
-                {% set qty_class = 'qty-out' %}
-                {% set stock_badge = 'OUT OF STOCK' %}
-                {% set stock_status = 'out' %}
-            {% elif inv.available <= threshold %}
-                {% set qty_class = 'qty-low' %}
-                {% set stock_badge = 'LOW STOCK' %}
-                {% set stock_status = 'low' %}
-            {% endif %}
-            <span class="live-inventory {{ qty_class }}" title="{{ inv.actual }} in stock - {{ inv.reserve }} reserved">
+            {% set qty_class = 'qty-ok' if stock_status == 'ok' else ('qty-low' if stock_status == 'low' else 'qty-out') %}
+            <span class="qty-value qty-neutral hide-narrow" title="{{ inv.actual }} in stock - {{ inv.reserve }} reserved">
                 {{ dashboard_qty(inv.available) }}
                 <small class="inventory-detail hide-medium">({{ inv.actual }} - {{ inv.reserve }})</small>
             </span>
-            {% if stock_badge %}
-                <span class="badge badge-{% if inv.available == 0 %}out-of-stock{% else %}low-stock{% endif %} hide-medium">{{ stock_badge }}</span>
-                <span class="stock-dot stock-{{ stock_status }} show-medium" title="{{ stock_badge }}"></span>
-            {% endif %}
+            <span class="qty-value {{ qty_class }} show-narrow" title="{{ inv.actual }} in stock - {{ inv.reserve }} reserved">
+                {{ dashboard_qty(inv.available) }}
+            </span>
         {% elif listing.quantity %}
-            {{ listing.quantity }}
+            <span class="qty-value qty-neutral hide-narrow">{{ listing.quantity }}</span>
+            <span class="qty-value {% if stock_status == 'out' %}qty-out{% elif stock_status == 'low' %}qty-low{% else %}qty-ok{% endif %} show-narrow">{{ listing.quantity }}</span>
         {% else %}
             —
         {% endif %}
@@ -54,7 +79,7 @@
     </td>
     <td class="col-updated">{{ date_display(listing.updated_at) }}</td>
     <td class="col-actions actions">
-        <a href="/listings/{{ listing.id }}/edit" class="btn btn-sm">Edit</a>
+        <a href="/listings/{{ listing.id }}/edit" class="btn btn-sm btn-edit">Edit</a>
         <form action="/listings/{{ listing.id }}/delete" method="post" style="display:inline">
             <input type="hidden" name="{{ csrf_field_name }}" value="{{ csrf_token }}">
             <button type="submit" class="btn btn-sm btn-danger"

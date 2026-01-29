@@ -1,8 +1,10 @@
 {% if suggestions %}
 <p>You're currently producing these materials:</p>
-<div class="suggestion-chips">
+<div class="suggestion-chips" id="quick-add-chips">
     {% for material in suggestions %}
-    <a href="/listings/new?material={{ material }}" class="chip">{{ material }}</a>
+    {%- set cat = material_categories.get(material) if material_categories else None -%}
+    {%- set cat_slug = (cat|lower|replace(' ', '-')|replace('(', '')|replace(')', '')) if cat else 'default' -%}
+    <a href="/listings/new?material={{ material }}" class="chip chip-{{ cat_slug }}">{{ material }}</a>
     {% endfor %}
 </div>
 {% else %}

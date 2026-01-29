@@ -298,6 +298,20 @@ body.loading #global-spinner::after {
 .btn-sm {
     padding: var(--space-xs) var(--space-sm);
     font-size: var(--text-xs);
+    line-height: 1;
+}
+
+.btn-edit {
+    background: #404050;
+    color: #c8c8d0;
+    border: none;
+    padding: var(--space-xs) var(--space-sm);
+    font-size: var(--text-xs);
+    line-height: 1;
+}
+
+.btn-edit:hover {
+    background: #505060;
 }
 
 /* ========================================
@@ -582,38 +596,45 @@ table tbody tr:hover {
 }
 
 .badge-standing {
-    background: var(--accent-cyan);
-    color: var(--text-inverse);
+    background: rgba(64, 200, 200, 0.15);
+    color: #40c8c8;
+    border: 1px solid rgba(64, 200, 200, 0.3);
 }
 
 .badge-special {
-    background: var(--accent-yellow);
-    color: var(--text-inverse);
+    background: rgba(92, 184, 92, 0.15);
+    color: #5cb85c;
+    border: 1px solid rgba(92, 184, 92, 0.3);
 }
 
 .badge-expired {
-    background: var(--accent-red);
-    color: var(--text-primary);
+    background: rgba(217, 83, 79, 0.15);
+    color: #d9534f;
+    border: 1px solid rgba(217, 83, 79, 0.3);
 }
 
 .badge-available {
-    background: var(--accent-green);
-    color: var(--text-inverse);
+    background: rgba(64, 192, 64, 0.15);
+    color: #40c040;
+    border: 1px solid rgba(64, 192, 64, 0.3);
 }
 
 .badge-low-stock {
-    background: var(--accent-orange);
-    color: var(--text-inverse);
+    background: rgba(230, 126, 34, 0.15);
+    color: #e67e22;
+    border: 1px solid rgba(230, 126, 34, 0.3);
 }
 
 .badge-out-of-stock {
-    background: var(--accent-red);
-    color: var(--text-primary);
+    background: rgba(217, 83, 79, 0.15);
+    color: #d9534f;
+    border: 1px solid rgba(217, 83, 79, 0.3);
 }
 
 .badge-made-to-order {
-    background: var(--accent-purple);
-    color: var(--text-primary);
+    background: rgba(160, 80, 192, 0.15);
+    color: #a050c0;
+    border: 1px solid rgba(160, 80, 192, 0.3);
 }
 
 .qty-unlimited {
@@ -815,20 +836,95 @@ table tbody tr:hover {
 
 .chip {
     display: inline-block;
-    padding: var(--space-xs) var(--space-sm);
-    background: var(--bg-tertiary);
-    border: 1px solid var(--border-subtle);
-    font-size: var(--text-sm);
+    padding: 2px 6px;
+    background: #2a2a3c;
+    border: 1px solid #3a3a4c;
+    font-size: 12px;
     font-family: var(--font-mono);
+    font-weight: 600;
+    text-shadow: 1px 1px 1px rgba(0,0,0,0.5);
     color: var(--accent-cyan);
+    min-width: 32px;
+    text-align: center;
 }
 
 .chip:hover {
-    background: var(--accent-cyan);
-    color: var(--text-inverse);
     text-decoration: none;
-    border-color: var(--accent-cyan);
+    filter: brightness(1.15);
 }
+
+.chip.lite:hover {
+    background: transparent;
+    filter: brightness(1.2);
+}
+
+/* Quick add chip category colors - FILLED style (matching mat-tile exactly) */
+.chip-agricultural-products:not(.lite) { background: linear-gradient(135deg, #003800, #0a4708); color: #8bb37b; border-color: #0a4708; }
+.chip-consumables-basic:not(.lite) { background: linear-gradient(135deg, #a62c2a, #ba363c); color: #ff989e; border-color: #ba363c; }
+.chip-consumables-luxury:not(.lite) { background: linear-gradient(135deg, #680000, #7b0012); color: #db9191; border-color: #7b0012; }
+.chip-fuels:not(.lite) { background: linear-gradient(135deg, #548d22, #6ba23c); color: #cbfaa3; border-color: #6ba23c; }
+.chip-liquids:not(.lite) { background: linear-gradient(135deg, #67a8da, #6098c3); color: #f1ffff; border-color: #6098c3; }
+.chip-plastics:not(.lite) { background: linear-gradient(135deg, #791f62, #92387b); color: #f89ee1; border-color: #92387b; }
+.chip-ship-shields:not(.lite) { background: linear-gradient(135deg, #bf740a, #d98c21); color: #dbdb79; border-color: #d98c21; }
+.chip-alloys:not(.lite) { background: linear-gradient(135deg, #8a5414, #e08838); color: #e8b366; border-color: #e08838; }
+.chip-chemicals:not(.lite) { background: linear-gradient(135deg, #a84a68, #e8809a); color: #f4a8be; border-color: #e8809a; }
+.chip-construction-materials:not(.lite) { background: linear-gradient(135deg, #3a6aa8, #7098d0); color: #a8c8f0; border-color: #7098d0; }
+.chip-construction-parts:not(.lite) { background: linear-gradient(135deg, #2e5a7c, #5494c8); color: #88b8dc; border-color: #5494c8; }
+.chip-construction-prefabs:not(.lite) { background: linear-gradient(135deg, #102478, #2848d0); color: #6080e8; border-color: #2848d0; }
+.chip-drones:not(.lite) { background: linear-gradient(135deg, #a03810, #f06028); color: #f89868; border-color: #f06028; }
+.chip-electronic-devices:not(.lite) { background: linear-gradient(135deg, #5a1894, #9830f0); color: #c080f8; border-color: #9830f0; }
+.chip-electronic-parts:not(.lite) { background: linear-gradient(135deg, #6848a8, #a078e0); color: #c8a8f8; border-color: #a078e0; }
+.chip-electronic-pieces:not(.lite) { background: linear-gradient(135deg, #8070a8, #c0a8e8); color: #e0d0f8; border-color: #c0a8e8; }
+.chip-electronic-systems:not(.lite) { background: linear-gradient(135deg, #441c6c, #7840ac); color: #a070d0; border-color: #7840ac; }
+.chip-elements:not(.lite) { background: linear-gradient(135deg, #54402c, #907050); color: #b89878; border-color: #907050; }
+.chip-energy-systems:not(.lite) { background: linear-gradient(135deg, #1c5838, #38a070); color: #70d0a0; border-color: #38a070; }
+.chip-gases:not(.lite) { background: linear-gradient(135deg, #008888, #20e8e8); color: #60f8f8; border-color: #20e8e8; }
+.chip-metals:not(.lite) { background: linear-gradient(135deg, #444444, #787878); color: #a8a8a8; border-color: #787878; }
+.chip-minerals:not(.lite) { background: linear-gradient(135deg, #907858, #c8a880); color: #e8d0b0; border-color: #c8a880; }
+.chip-ores:not(.lite) { background: linear-gradient(135deg, #585c68, #9498a8); color: #b8c0d0; border-color: #9498a8; }
+.chip-ship-engines:not(.lite) { background: linear-gradient(135deg, #c02800, #ff5010); color: #ff9060; border-color: #ff5010; }
+.chip-ship-kits:not(.lite) { background: linear-gradient(135deg, #b86000, #ff9810); color: #ffc060; border-color: #ff9810; }
+.chip-ship-parts:not(.lite) { background: linear-gradient(135deg, #c07800, #ffa810); color: #ffd060; border-color: #ffa810; }
+.chip-software-components:not(.lite) { background: linear-gradient(135deg, #988828, #d0c060); color: #e8e098; border-color: #d0c060; }
+.chip-software-systems:not(.lite) { background: linear-gradient(135deg, #786808, #b09818); color: #d0c048; border-color: #b09818; }
+.chip-software-tools:not(.lite) { background: linear-gradient(135deg, #a88010, #e8b028); color: #f8d870; border-color: #e8b028; }
+.chip-textiles:not(.lite) { background: linear-gradient(135deg, #647020, #a8b848); color: #c8d878; border-color: #a8b848; }
+.chip-unit-prefabs:not(.lite) { background: linear-gradient(135deg, #302830, #605058); color: #908088; border-color: #605058; }
+.chip-default:not(.lite) { background: var(--bg-tertiary); color: var(--accent-cyan); border-color: var(--border-subtle); }
+
+/* Quick add chip category colors - LITE style (more vivid text on transparent) */
+.chip-agricultural-products.lite { color: #9ddf85; }
+.chip-consumables-basic.lite { color: #ff7a82; }
+.chip-consumables-luxury.lite { color: #ff9090; }
+.chip-fuels.lite { color: #b8ff70; }
+.chip-liquids.lite { color: #90e0ff; }
+.chip-plastics.lite { color: #ff8eef; }
+.chip-ship-shields.lite { color: #ffff60; }
+.chip-alloys.lite { color: #ffb850; }
+.chip-chemicals.lite { color: #ff90b8; }
+.chip-construction-materials.lite { color: #90c8ff; }
+.chip-construction-parts.lite { color: #70c0ff; }
+.chip-construction-prefabs.lite { color: #5090ff; }
+.chip-drones.lite { color: #ff8040; }
+.chip-electronic-devices.lite { color: #d070ff; }
+.chip-electronic-parts.lite { color: #c890ff; }
+.chip-electronic-pieces.lite { color: #d8b8ff; }
+.chip-electronic-systems.lite { color: #b860f0; }
+.chip-elements.lite { color: #d8a870; }
+.chip-energy-systems.lite { color: #50f0a0; }
+.chip-gases.lite { color: #40ffff; }
+.chip-metals.lite { color: #c8c8c8; }
+.chip-minerals.lite { color: #ffd090; }
+.chip-ores.lite { color: #c0d0e8; }
+.chip-ship-engines.lite { color: #ff6830; }
+.chip-ship-kits.lite { color: #ffb030; }
+.chip-ship-parts.lite { color: #ffc030; }
+.chip-software-components.lite { color: #f0e860; }
+.chip-software-systems.lite { color: #e0d030; }
+.chip-software-tools.lite { color: #ffe050; }
+.chip-textiles.lite { color: #c8f050; }
+.chip-unit-prefabs.lite { color: #b090a8; }
+.chip-default.lite { color: #50e8e8; }
 
 .chip-more {
     color: var(--text-tertiary);
@@ -1131,6 +1227,10 @@ table tbody tr:hover {
     margin-left: var(--space-sm);
 }
 
+.col-quantity .badge {
+    margin-left: var(--space-xs);
+}
+
 /* ========================================
    Browse Tabs (Items / Bundles)
    ======================================== */
@@ -1393,6 +1493,12 @@ table tbody tr:hover {
 
 .bundle-item-row .form-group:last-child {
     flex: 0 0 auto;
+}
+
+.bundle-item-row .btn-danger {
+    height: 34px;
+    display: flex;
+    align-items: center;
 }
 
 #bundle-items-container {
@@ -1871,6 +1977,15 @@ html.force-desktop .nav-links {
         white-space: nowrap;
     }
 
+    /* Move border from cells to rows for consistent alignment */
+    .listings-table td {
+        border-bottom: none;
+    }
+
+    .listings-table tbody tr {
+        border-bottom: 1px solid var(--border-subtle);
+    }
+
     .listings-table th {
         font-size: 9px;
     }
@@ -1890,12 +2005,6 @@ html.force-desktop .nav-links {
     /* Hide "(X ready)" on narrow viewport - badge is enough */
     .qty-ready {
         display: none;
-    }
-
-    /* Move button to align with section edge */
-    .profile-bundles .col-actions .btn,
-    .my-bundles .col-actions .btn {
-        margin-right: -4px;
     }
 
     /* Full-width container, minimal padding */
@@ -2130,7 +2239,7 @@ html.force-desktop .nav-links {
     .actions {
         display: flex;
         flex-direction: row;
-        gap: 2px;
+        gap: 4px;
         justify-content: flex-end;
     }
 
@@ -2165,6 +2274,16 @@ html.force-desktop .nav-links {
     .container {
         max-width: 100%;
         margin: 0;
+    }
+
+    /* Allow horizontal scroll if table is too wide */
+    .table-wrapper {
+        overflow-x: auto;
+    }
+
+    /* Override min-width on qty-cell */
+    .qty-cell {
+        min-width: 0;
     }
 
     /* Hide inventory breakdown - show only main qty */
@@ -3112,4 +3231,1185 @@ html.force-desktop .nav-links {
     margin: 0;
     color: var(--text-secondary);
     font-size: var(--text-sm);
+}
+
+/* ========================================
+   Material Tile Styles (Category Colors)
+   ======================================== */
+
+/* Base tile style */
+.mat-tile {
+    display: inline-block;
+    padding: 2px 6px;
+    font-family: var(--font-mono);
+    font-size: 12px;
+    font-weight: 600;
+    cursor: pointer;
+    text-shadow: 1px 1px 1px rgba(0,0,0,0.5);
+    text-decoration: none;
+    min-width: 32px;
+    text-align: center;
+}
+
+.mat-tile:hover {
+    text-decoration: none;
+    filter: brightness(1.1);
+}
+
+/* Fallback/default */
+.mat-tile-default {
+    background: var(--bg-tertiary);
+    color: var(--accent-cyan);
+}
+
+/* ----------------------------------------
+   rPrun Overrides (7 categories)
+   ---------------------------------------- */
+.mat-tile-agricultural-products {
+    background: linear-gradient(135deg, #003800, #0a4708);
+    color: #8bb37b;
+}
+
+.mat-tile-consumables-basic {
+    background: linear-gradient(135deg, #a62c2a, #ba363c);
+    color: #ff989e;
+}
+
+.mat-tile-consumables-luxury {
+    background: linear-gradient(135deg, #680000, #7b0012);
+    color: #db9191;
+}
+
+.mat-tile-fuels {
+    background: linear-gradient(135deg, #548d22, #6ba23c);
+    color: #cbfaa3;
+}
+
+.mat-tile-liquids {
+    background: linear-gradient(135deg, #67a8da, #6098c3);
+    color: #f1ffff;
+}
+
+.mat-tile-plastics {
+    background: linear-gradient(135deg, #791f62, #92387b);
+    color: #f89ee1;
+}
+
+.mat-tile-ship-shields {
+    background: linear-gradient(135deg, #bf740a, #d98c21);
+    color: #dbdb79;
+}
+
+/* ----------------------------------------
+   Formula-derived categories
+   ---------------------------------------- */
+.mat-tile-alloys {
+    background: linear-gradient(135deg, #8a5414, #e08838);
+    color: #e8b366;
+}
+
+.mat-tile-chemicals {
+    background: linear-gradient(135deg, #a84a68, #e8809a);
+    color: #f4a8be;
+}
+
+.mat-tile-construction-materials {
+    background: linear-gradient(135deg, #3a6aa8, #7098d0);
+    color: #a8c8f0;
+}
+
+.mat-tile-construction-parts {
+    background: linear-gradient(135deg, #2e5a7c, #5494c8);
+    color: #88b8dc;
+}
+
+.mat-tile-construction-prefabs {
+    background: linear-gradient(135deg, #102478, #2848d0);
+    color: #6080e8;
+}
+
+.mat-tile-drones {
+    background: linear-gradient(135deg, #a03810, #f06028);
+    color: #f89868;
+}
+
+.mat-tile-electronic-devices {
+    background: linear-gradient(135deg, #5a1894, #9830f0);
+    color: #c080f8;
+}
+
+.mat-tile-electronic-parts {
+    background: linear-gradient(135deg, #6848a8, #a078e0);
+    color: #c8a8f8;
+}
+
+.mat-tile-electronic-pieces {
+    background: linear-gradient(135deg, #8070a8, #c0a8e8);
+    color: #e0d0f8;
+}
+
+.mat-tile-electronic-systems {
+    background: linear-gradient(135deg, #441c6c, #7840ac);
+    color: #a070d0;
+}
+
+.mat-tile-elements {
+    background: linear-gradient(135deg, #54402c, #907050);
+    color: #b89878;
+}
+
+.mat-tile-energy-systems {
+    background: linear-gradient(135deg, #1c5838, #38a070);
+    color: #70d0a0;
+}
+
+.mat-tile-gases {
+    background: linear-gradient(135deg, #008888, #20e8e8);
+    color: #60f8f8;
+}
+
+.mat-tile-metals {
+    background: linear-gradient(135deg, #444444, #787878);
+    color: #a8a8a8;
+}
+
+.mat-tile-minerals {
+    background: linear-gradient(135deg, #907858, #c8a880);
+    color: #e8d0b0;
+}
+
+.mat-tile-ores {
+    background: linear-gradient(135deg, #585c68, #9498a8);
+    color: #b8c0d0;
+}
+
+.mat-tile-ship-engines {
+    background: linear-gradient(135deg, #c02800, #ff5010);
+    color: #ff9060;
+}
+
+.mat-tile-ship-kits {
+    background: linear-gradient(135deg, #b86000, #ff9810);
+    color: #ffc060;
+}
+
+.mat-tile-ship-parts {
+    background: linear-gradient(135deg, #c07800, #ffa810);
+    color: #ffd060;
+}
+
+.mat-tile-software-components {
+    background: linear-gradient(135deg, #988828, #d0c060);
+    color: #e8e098;
+}
+
+.mat-tile-software-systems {
+    background: linear-gradient(135deg, #786808, #b09818);
+    color: #d0c048;
+}
+
+.mat-tile-software-tools {
+    background: linear-gradient(135deg, #a88010, #e8b028);
+    color: #f8d870;
+}
+
+.mat-tile-textiles {
+    background: linear-gradient(135deg, #647020, #a8b848);
+    color: #c8d878;
+}
+
+.mat-tile-unit-prefabs {
+    background: linear-gradient(135deg, #302830, #605058);
+    color: #908088;
+}
+
+/* ========================================
+   Theme Variants for Material Tiles
+   Applied via data-theme attribute on <html>
+   ======================================== */
+
+/* ----------------------------------------
+   Monochrome Theme
+   All tiles are neutral grey
+   ---------------------------------------- */
+[data-theme="monochrome"] .mat-tile,
+[data-theme="monochrome"] .mat-tile-default,
+[data-theme="monochrome"] .mat-tile-agricultural-products,
+[data-theme="monochrome"] .mat-tile-consumables-basic,
+[data-theme="monochrome"] .mat-tile-consumables-luxury,
+[data-theme="monochrome"] .mat-tile-fuels,
+[data-theme="monochrome"] .mat-tile-liquids,
+[data-theme="monochrome"] .mat-tile-plastics,
+[data-theme="monochrome"] .mat-tile-ship-shields,
+[data-theme="monochrome"] .mat-tile-alloys,
+[data-theme="monochrome"] .mat-tile-chemicals,
+[data-theme="monochrome"] .mat-tile-construction-materials,
+[data-theme="monochrome"] .mat-tile-construction-parts,
+[data-theme="monochrome"] .mat-tile-construction-prefabs,
+[data-theme="monochrome"] .mat-tile-drones,
+[data-theme="monochrome"] .mat-tile-electronic-devices,
+[data-theme="monochrome"] .mat-tile-electronic-parts,
+[data-theme="monochrome"] .mat-tile-electronic-pieces,
+[data-theme="monochrome"] .mat-tile-electronic-systems,
+[data-theme="monochrome"] .mat-tile-elements,
+[data-theme="monochrome"] .mat-tile-energy-systems,
+[data-theme="monochrome"] .mat-tile-gases,
+[data-theme="monochrome"] .mat-tile-metals,
+[data-theme="monochrome"] .mat-tile-minerals,
+[data-theme="monochrome"] .mat-tile-ores,
+[data-theme="monochrome"] .mat-tile-ship-engines,
+[data-theme="monochrome"] .mat-tile-ship-kits,
+[data-theme="monochrome"] .mat-tile-ship-parts,
+[data-theme="monochrome"] .mat-tile-software-components,
+[data-theme="monochrome"] .mat-tile-software-systems,
+[data-theme="monochrome"] .mat-tile-software-tools,
+[data-theme="monochrome"] .mat-tile-textiles,
+[data-theme="monochrome"] .mat-tile-unit-prefabs {
+    background: #2a2a3c;
+    color: #c8c8d0;
+    border: 1px solid #3a3a4c;
+}
+
+/* Monochrome chips - FILLED style (matching mat-tile) */
+[data-theme="monochrome"] .chip[class*="chip-"]:not(.lite) {
+    background: #2a2a3c;
+    color: #c8c8d0;
+    border-color: #3a3a4c;
+}
+/* Monochrome chips - LITE style */
+[data-theme="monochrome"] .chip[class*="chip-"].lite {
+    color: #c8c8d0;
+}
+
+/* ----------------------------------------
+   High Contrast Theme
+   Solid saturated colors for visibility
+   ---------------------------------------- */
+[data-theme="high-contrast"] .mat-tile-agricultural-products {
+    background: #2d5a2d;
+    color: #90ee90;
+}
+[data-theme="high-contrast"] .mat-tile-consumables-basic {
+    background: #8b0000;
+    color: #ff6b6b;
+}
+[data-theme="high-contrast"] .mat-tile-consumables-luxury {
+    background: #5a0000;
+    color: #ff8888;
+}
+[data-theme="high-contrast"] .mat-tile-fuels {
+    background: #228b22;
+    color: #98fb98;
+}
+[data-theme="high-contrast"] .mat-tile-liquids {
+    background: #1e90ff;
+    color: #ffffff;
+}
+[data-theme="high-contrast"] .mat-tile-plastics {
+    background: #9932cc;
+    color: #dda0dd;
+}
+[data-theme="high-contrast"] .mat-tile-ship-shields {
+    background: #b8860b;
+    color: #ffff00;
+}
+[data-theme="high-contrast"] .mat-tile-alloys {
+    background: #8b4513;
+    color: #ffd700;
+}
+[data-theme="high-contrast"] .mat-tile-chemicals {
+    background: #c71585;
+    color: #ffb6c1;
+}
+[data-theme="high-contrast"] .mat-tile-construction-materials {
+    background: #4169e1;
+    color: #b0c4de;
+}
+[data-theme="high-contrast"] .mat-tile-construction-parts {
+    background: #4682b4;
+    color: #add8e6;
+}
+[data-theme="high-contrast"] .mat-tile-construction-prefabs {
+    background: #0000cd;
+    color: #87ceeb;
+}
+[data-theme="high-contrast"] .mat-tile-drones {
+    background: #ff4500;
+    color: #ffa07a;
+}
+[data-theme="high-contrast"] .mat-tile-electronic-devices {
+    background: #8a2be2;
+    color: #e6e6fa;
+}
+[data-theme="high-contrast"] .mat-tile-electronic-parts {
+    background: #9370db;
+    color: #e6e6fa;
+}
+[data-theme="high-contrast"] .mat-tile-electronic-pieces {
+    background: #ba55d3;
+    color: #ffffff;
+}
+[data-theme="high-contrast"] .mat-tile-electronic-systems {
+    background: #6a0dad;
+    color: #dda0dd;
+}
+[data-theme="high-contrast"] .mat-tile-elements {
+    background: #8b4513;
+    color: #f5deb3;
+}
+[data-theme="high-contrast"] .mat-tile-energy-systems {
+    background: #006400;
+    color: #98fb98;
+}
+[data-theme="high-contrast"] .mat-tile-gases {
+    background: #00ced1;
+    color: #ffffff;
+}
+[data-theme="high-contrast"] .mat-tile-metals {
+    background: #696969;
+    color: #dcdcdc;
+}
+[data-theme="high-contrast"] .mat-tile-minerals {
+    background: #d2691e;
+    color: #ffe4c4;
+}
+[data-theme="high-contrast"] .mat-tile-ores {
+    background: #708090;
+    color: #e0e0e0;
+}
+[data-theme="high-contrast"] .mat-tile-ship-engines {
+    background: #dc143c;
+    color: #ffc0cb;
+}
+[data-theme="high-contrast"] .mat-tile-ship-kits {
+    background: #ff8c00;
+    color: #fffacd;
+}
+[data-theme="high-contrast"] .mat-tile-ship-parts {
+    background: #ffa500;
+    color: #ffffff;
+}
+[data-theme="high-contrast"] .mat-tile-software-components {
+    background: #9acd32;
+    color: #ffffff;
+}
+[data-theme="high-contrast"] .mat-tile-software-systems {
+    background: #6b8e23;
+    color: #f0e68c;
+}
+[data-theme="high-contrast"] .mat-tile-software-tools {
+    background: #bdb76b;
+    color: #2f2f2f;
+}
+[data-theme="high-contrast"] .mat-tile-textiles {
+    background: #7cfc00;
+    color: #2f2f2f;
+}
+[data-theme="high-contrast"] .mat-tile-unit-prefabs {
+    background: #4f4f4f;
+    color: #c0c0c0;
+}
+
+/* High contrast chips - FILLED style (matching mat-tile) */
+[data-theme="high-contrast"] .chip-agricultural-products:not(.lite) { background: #2d5a2d; color: #90ee90; border-color: #3d6a3d; }
+[data-theme="high-contrast"] .chip-consumables-basic:not(.lite) { background: #8b0000; color: #ff6b6b; border-color: #9b1010; }
+[data-theme="high-contrast"] .chip-consumables-luxury:not(.lite) { background: #5a0000; color: #ff8888; border-color: #6a1010; }
+[data-theme="high-contrast"] .chip-fuels:not(.lite) { background: #228b22; color: #98fb98; border-color: #329b32; }
+[data-theme="high-contrast"] .chip-liquids:not(.lite) { background: #1e90ff; color: #ffffff; border-color: #3ea0ff; }
+[data-theme="high-contrast"] .chip-plastics:not(.lite) { background: #9932cc; color: #dda0dd; border-color: #a942dc; }
+[data-theme="high-contrast"] .chip-ship-shields:not(.lite) { background: #b8860b; color: #ffff00; border-color: #c8961b; }
+[data-theme="high-contrast"] .chip-alloys:not(.lite) { background: #8b4513; color: #ffd700; border-color: #9b5523; }
+[data-theme="high-contrast"] .chip-chemicals:not(.lite) { background: #c71585; color: #ffb6c1; border-color: #d72595; }
+[data-theme="high-contrast"] .chip-construction-materials:not(.lite) { background: #4169e1; color: #b0c4de; border-color: #5179f1; }
+[data-theme="high-contrast"] .chip-construction-parts:not(.lite) { background: #4682b4; color: #add8e6; border-color: #5692c4; }
+[data-theme="high-contrast"] .chip-construction-prefabs:not(.lite) { background: #0000cd; color: #87ceeb; border-color: #1010dd; }
+[data-theme="high-contrast"] .chip-drones:not(.lite) { background: #ff4500; color: #ffa07a; border-color: #ff5510; }
+[data-theme="high-contrast"] .chip-electronic-devices:not(.lite) { background: #8a2be2; color: #e6e6fa; border-color: #9a3bf2; }
+[data-theme="high-contrast"] .chip-electronic-parts:not(.lite) { background: #9370db; color: #e6e6fa; border-color: #a380eb; }
+[data-theme="high-contrast"] .chip-electronic-pieces:not(.lite) { background: #ba55d3; color: #ffffff; border-color: #ca65e3; }
+[data-theme="high-contrast"] .chip-electronic-systems:not(.lite) { background: #6a0dad; color: #dda0dd; border-color: #7a1dbd; }
+[data-theme="high-contrast"] .chip-elements:not(.lite) { background: #8b4513; color: #f5deb3; border-color: #9b5523; }
+[data-theme="high-contrast"] .chip-energy-systems:not(.lite) { background: #006400; color: #98fb98; border-color: #107410; }
+[data-theme="high-contrast"] .chip-gases:not(.lite) { background: #00ced1; color: #ffffff; border-color: #10dee1; }
+[data-theme="high-contrast"] .chip-metals:not(.lite) { background: #696969; color: #dcdcdc; border-color: #797979; }
+[data-theme="high-contrast"] .chip-minerals:not(.lite) { background: #d2691e; color: #ffe4c4; border-color: #e2792e; }
+[data-theme="high-contrast"] .chip-ores:not(.lite) { background: #708090; color: #e0e0e0; border-color: #8090a0; }
+[data-theme="high-contrast"] .chip-ship-engines:not(.lite) { background: #dc143c; color: #ffc0cb; border-color: #ec244c; }
+[data-theme="high-contrast"] .chip-ship-kits:not(.lite) { background: #ff8c00; color: #fffacd; border-color: #ff9c10; }
+[data-theme="high-contrast"] .chip-ship-parts:not(.lite) { background: #ffa500; color: #ffffff; border-color: #ffb510; }
+[data-theme="high-contrast"] .chip-software-components:not(.lite) { background: #9acd32; color: #ffffff; border-color: #aadd42; }
+[data-theme="high-contrast"] .chip-software-systems:not(.lite) { background: #6b8e23; color: #f0e68c; border-color: #7b9e33; }
+[data-theme="high-contrast"] .chip-software-tools:not(.lite) { background: #bdb76b; color: #2f2f2f; border-color: #cdc77b; }
+[data-theme="high-contrast"] .chip-textiles:not(.lite) { background: #7cfc00; color: #2f2f2f; border-color: #8cff10; }
+[data-theme="high-contrast"] .chip-unit-prefabs:not(.lite) { background: #4f4f4f; color: #c0c0c0; border-color: #5f5f5f; }
+/* High contrast chips - LITE style */
+[data-theme="high-contrast"] .chip-agricultural-products.lite { color: #90ee90; }
+[data-theme="high-contrast"] .chip-consumables-basic.lite { color: #ff6b6b; }
+[data-theme="high-contrast"] .chip-consumables-luxury.lite { color: #ff8888; }
+[data-theme="high-contrast"] .chip-fuels.lite { color: #98fb98; }
+[data-theme="high-contrast"] .chip-liquids.lite { color: #ffffff; }
+[data-theme="high-contrast"] .chip-plastics.lite { color: #dda0dd; }
+[data-theme="high-contrast"] .chip-ship-shields.lite { color: #ffff00; }
+[data-theme="high-contrast"] .chip-alloys.lite { color: #ffd700; }
+[data-theme="high-contrast"] .chip-chemicals.lite { color: #ffb6c1; }
+[data-theme="high-contrast"] .chip-construction-materials.lite { color: #b0c4de; }
+[data-theme="high-contrast"] .chip-construction-parts.lite { color: #add8e6; }
+[data-theme="high-contrast"] .chip-construction-prefabs.lite { color: #87ceeb; }
+[data-theme="high-contrast"] .chip-drones.lite { color: #ffa07a; }
+[data-theme="high-contrast"] .chip-electronic-devices.lite { color: #e6e6fa; }
+[data-theme="high-contrast"] .chip-electronic-parts.lite { color: #e6e6fa; }
+[data-theme="high-contrast"] .chip-electronic-pieces.lite { color: #ffffff; }
+[data-theme="high-contrast"] .chip-electronic-systems.lite { color: #dda0dd; }
+[data-theme="high-contrast"] .chip-elements.lite { color: #f5deb3; }
+[data-theme="high-contrast"] .chip-energy-systems.lite { color: #98fb98; }
+[data-theme="high-contrast"] .chip-gases.lite { color: #00ced1; }
+[data-theme="high-contrast"] .chip-metals.lite { color: #dcdcdc; }
+[data-theme="high-contrast"] .chip-minerals.lite { color: #ffe4c4; }
+[data-theme="high-contrast"] .chip-ores.lite { color: #e0e0e0; }
+[data-theme="high-contrast"] .chip-ship-engines.lite { color: #ffc0cb; }
+[data-theme="high-contrast"] .chip-ship-kits.lite { color: #fffacd; }
+[data-theme="high-contrast"] .chip-ship-parts.lite { color: #ffa500; }
+[data-theme="high-contrast"] .chip-software-components.lite { color: #9acd32; }
+[data-theme="high-contrast"] .chip-software-systems.lite { color: #f0e68c; }
+[data-theme="high-contrast"] .chip-software-tools.lite { color: #bdb76b; }
+[data-theme="high-contrast"] .chip-textiles.lite { color: #7cfc00; }
+[data-theme="high-contrast"] .chip-unit-prefabs.lite { color: #c0c0c0; }
+
+/* ----------------------------------------
+   PrUn Default Theme
+   Vanilla PrUn base colors
+   ---------------------------------------- */
+[data-theme="prun-default"] .mat-tile-agricultural-products {
+    background: linear-gradient(135deg, #781010, #c83030);
+    color: #e86060;
+}
+[data-theme="prun-default"] .mat-tile-consumables-basic {
+    background: linear-gradient(135deg, #943838, #e06868);
+    color: #f89898;
+}
+[data-theme="prun-default"] .mat-tile-fuels {
+    background: linear-gradient(135deg, #1a8a1a, #40e040);
+    color: #80f080;
+}
+[data-theme="prun-default"] .mat-tile-liquids {
+    background: linear-gradient(135deg, #8aa8c0, #d0e8f8);
+    color: #f0f8ff;
+}
+[data-theme="prun-default"] .mat-tile-plastics {
+    background: linear-gradient(135deg, #901840, #e04078);
+    color: #f080a8;
+}
+
+/* PrUn default chips - FILLED style (matching mat-tile) */
+[data-theme="prun-default"] .chip-agricultural-products:not(.lite) { background: linear-gradient(135deg, #781010, #c83030); color: #e86060; border-color: #c83030; }
+[data-theme="prun-default"] .chip-consumables-basic:not(.lite) { background: linear-gradient(135deg, #943838, #e06868); color: #f89898; border-color: #e06868; }
+[data-theme="prun-default"] .chip-fuels:not(.lite) { background: linear-gradient(135deg, #1a8a1a, #40e040); color: #80f080; border-color: #40e040; }
+[data-theme="prun-default"] .chip-liquids:not(.lite) { background: linear-gradient(135deg, #8aa8c0, #d0e8f8); color: #f0f8ff; border-color: #d0e8f8; }
+[data-theme="prun-default"] .chip-plastics:not(.lite) { background: linear-gradient(135deg, #901840, #e04078); color: #f080a8; border-color: #e04078; }
+/* PrUn default chips - LITE style (more vivid) */
+[data-theme="prun-default"] .chip-agricultural-products.lite { color: #ff5050; }
+[data-theme="prun-default"] .chip-consumables-basic.lite { color: #ff8080; }
+[data-theme="prun-default"] .chip-fuels.lite { color: #60ff60; }
+[data-theme="prun-default"] .chip-liquids.lite { color: #a0d8ff; }
+[data-theme="prun-default"] .chip-plastics.lite { color: #ff60a0; }
+
+/* ========================================
+   Theme Selector UI Styles
+   ======================================== */
+.theme-selector {
+    margin-top: var(--space-md);
+}
+
+.theme-options {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-sm);
+}
+
+.theme-option {
+    display: flex;
+    align-items: center;
+    gap: var(--space-sm);
+    padding: var(--space-sm) var(--space-md);
+    background: var(--bg-tertiary);
+    border: 2px solid transparent;
+    cursor: pointer;
+    transition: all 0.15s ease;
+}
+
+.theme-option:hover {
+    background: var(--bg-highlight);
+}
+
+.theme-option.selected {
+    border-color: var(--accent-yellow);
+    background: rgba(240, 184, 48, 0.05);
+}
+
+.theme-option input[type="radio"] {
+    display: none;
+}
+
+.theme-radio-dot {
+    width: 18px;
+    height: 18px;
+    border: 2px solid var(--text-tertiary);
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+}
+
+.theme-option.selected .theme-radio-dot {
+    border-color: var(--accent-yellow);
+}
+
+.theme-radio-dot::after {
+    content: '';
+    width: 8px;
+    height: 8px;
+    background: var(--accent-yellow);
+    border-radius: 50%;
+    opacity: 0;
+    transition: opacity 0.15s ease;
+}
+
+.theme-option.selected .theme-radio-dot::after {
+    opacity: 1;
+}
+
+.theme-content {
+    flex: 1;
+}
+
+.theme-name {
+    color: var(--text-primary);
+    font-weight: 600;
+    font-size: var(--text-sm);
+    margin-bottom: 2px;
+}
+
+.theme-desc {
+    color: var(--text-secondary);
+    font-size: var(--text-xs);
+}
+
+.theme-preview {
+    display: flex;
+    gap: 4px;
+    flex-shrink: 0;
+}
+
+.theme-preview-tile {
+    display: inline-block;
+    padding: 2px 6px;
+    font-family: var(--font-mono);
+    font-size: 11px;
+    font-weight: 600;
+    text-shadow: 1px 1px 1px rgba(0,0,0,0.5);
+}
+
+/* Theme preview tiles - rPrun */
+.theme-preview-rprun-agri { background: linear-gradient(135deg, #003800, #0a4708); color: #8bb37b; }
+.theme-preview-rprun-cons { background: linear-gradient(135deg, #a62c2a, #ba363c); color: #ff989e; }
+.theme-preview-rprun-fuel { background: linear-gradient(135deg, #548d22, #6ba23c); color: #cbfaa3; }
+.theme-preview-rprun-liq { background: linear-gradient(135deg, #67a8da, #6098c3); color: #f1ffff; }
+.theme-preview-rprun-plas { background: linear-gradient(135deg, #791f62, #92387b); color: #f89ee1; }
+
+/* Theme preview tiles - Default PrUn */
+.theme-preview-default-agri { background: linear-gradient(135deg, #781010, #c83030); color: #e86060; }
+.theme-preview-default-cons { background: linear-gradient(135deg, #943838, #e06868); color: #f89898; }
+.theme-preview-default-fuel { background: linear-gradient(135deg, #1a8a1a, #40e040); color: #80f080; }
+.theme-preview-default-liq { background: linear-gradient(135deg, #8aa8c0, #d0e8f8); color: #f0f8ff; }
+.theme-preview-default-plas { background: linear-gradient(135deg, #901840, #e04078); color: #f080a8; }
+
+/* Theme preview tiles - High Contrast */
+.theme-preview-contrast-agri { background: #2d5a2d; color: #90ee90; }
+.theme-preview-contrast-cons { background: #8b0000; color: #ff6b6b; }
+.theme-preview-contrast-fuel { background: #228b22; color: #98fb98; }
+.theme-preview-contrast-liq { background: #1e90ff; color: #ffffff; }
+.theme-preview-contrast-plas { background: #9932cc; color: #dda0dd; }
+
+/* Theme preview tiles - Monochrome */
+.theme-preview-mono { background: #2a2a3c; color: #c8c8d0; border: 1px solid #3a3a4c; }
+
+/* ========================================
+   Status Badges and Dots (Feature 1)
+   ======================================== */
+
+/* Status badge - full text for wide view */
+.status-badge {
+    display: inline-block;
+    padding: 2px 6px;
+    font-size: var(--text-xs);
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    white-space: nowrap;
+}
+
+.status-badge.instock {
+    background: rgba(64, 192, 64, 0.15);
+    color: var(--accent-green);
+    border: 1px solid rgba(64, 192, 64, 0.3);
+}
+
+.status-badge.low {
+    background: rgba(230, 126, 34, 0.15);
+    color: #e67e22;
+    border: 1px solid rgba(230, 126, 34, 0.3);
+}
+
+.status-badge.out {
+    background: rgba(217, 83, 79, 0.15);
+    color: #d9534f;
+    border: 1px solid rgba(217, 83, 79, 0.3);
+}
+
+.status-badge.mto {
+    background: rgba(160, 80, 192, 0.15);
+    color: var(--accent-purple);
+    border: 1px solid rgba(160, 80, 192, 0.3);
+}
+
+.status-badge.unlimited {
+    background: rgba(64, 200, 200, 0.15);
+    color: var(--accent-cyan);
+    border: 1px solid rgba(64, 200, 200, 0.3);
+    font-size: var(--text-lg);
+}
+
+/* Status dot - compact for medium view */
+.status-dot {
+    display: inline-block;
+    width: 10px;
+    height: 10px;
+    border-radius: 50%;
+}
+
+.status-dot.instock {
+    background: var(--accent-green);
+}
+
+.status-dot.low {
+    background: #e67e22;
+}
+
+.status-dot.out {
+    background: #d9534f;
+}
+
+.status-dot.mto {
+    background: var(--accent-purple);
+}
+
+.status-dot.unlimited {
+    background: var(--accent-cyan);
+}
+
+/* Status column responsive visibility */
+.col-status {
+    white-space: nowrap;
+}
+
+.status-wide {
+    display: inline;
+}
+
+.status-medium {
+    display: none;
+}
+
+/* Qty neutral color (when status column visible) */
+.qty-value.qty-neutral {
+    color: var(--text-primary);
+}
+
+/* Qty special colors for narrow view */
+.qty-value.qty-unlimited {
+    color: var(--accent-cyan);
+    font-weight: 600;
+}
+
+.qty-value.qty-mto {
+    color: var(--accent-purple);
+}
+
+/* Medium viewport: show dot, hide badge */
+@media (max-width: 720px) and (min-width: 450px) {
+    .status-wide {
+        display: none;
+    }
+    .status-medium {
+        display: inline;
+    }
+}
+
+/* 450-540px gap fix: general helpers toggle at 540px, but status column
+   doesn't hide until 450px. Keep qty neutral in this range. */
+@media (max-width: 540px) and (min-width: 451px) {
+    .col-quantity .hide-narrow {
+        display: initial !important;
+    }
+    .col-quantity .show-narrow {
+        display: none !important;
+    }
+}
+
+/* Narrow viewport: hide status column entirely, show colored qty */
+@media (max-width: 450px) {
+    .col-status {
+        display: none;
+    }
+
+    /* Show colored qty values when status column is hidden */
+    .qty-value.qty-neutral {
+        display: none;
+    }
+
+    /* Override show-narrow to work at 450px for qty display */
+    .col-quantity .show-narrow {
+        display: initial !important;
+    }
+
+    .col-quantity .hide-narrow {
+        display: none !important;
+    }
+}
+
+/* ========================================
+   Collapsible Filter Section (Feature 2)
+   ======================================== */
+
+.filter-section {
+    margin-bottom: var(--space-md);
+    background: var(--bg-secondary);
+    border: 1px solid var(--border-subtle);
+}
+
+.filter-bar {
+    display: flex;
+    align-items: center;
+    gap: var(--space-sm);
+    padding: var(--space-sm) var(--space-md);
+    flex-wrap: wrap;
+}
+
+.filter-fields {
+    max-height: 0;
+    overflow: hidden;
+    transition: max-height 0.3s ease, padding 0.3s ease;
+    padding: 0 var(--space-md);
+}
+
+.filter-fields.expanded {
+    max-height: 200px;
+    padding: var(--space-sm) var(--space-md) var(--space-md);
+}
+
+/* Toggle button state */
+.filter-toggle-hide {
+    display: none;
+}
+
+.filter-fields.expanded ~ .filter-bar .filter-toggle-show,
+.filter-bar:has(~ .filter-fields.expanded) .filter-toggle-show {
+    display: none;
+}
+
+.filter-fields.expanded ~ .filter-bar .filter-toggle-hide,
+.filter-bar:has(~ .filter-fields.expanded) .filter-toggle-hide {
+    display: inline;
+}
+
+/* Since :has() isn't fully supported, use JS to toggle a class */
+.filter-section.filters-expanded .filter-toggle-show {
+    display: none;
+}
+
+.filter-section.filters-expanded .filter-toggle-hide {
+    display: inline;
+}
+
+/* Small button style (PrUn native style) */
+.btn-small {
+    display: inline-block;
+    padding: 4px 8px;
+    background: var(--bg-tertiary);
+    border: 1px solid var(--border-medium);
+    color: var(--text-secondary);
+    font-size: var(--text-xs);
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    cursor: pointer;
+    transition: background 0.15s, border-color 0.15s, color 0.15s;
+}
+
+.btn-small:hover {
+    background: var(--bg-highlight);
+    border-color: var(--border-strong);
+    color: var(--text-primary);
+}
+
+/* Active filters container */
+.active-filters {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--space-xs);
+    flex: 1;
+}
+
+/* Filter pill */
+.filter-pill {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    padding: 2px 6px;
+    background: var(--bg-tertiary);
+    border: 1px solid var(--border-medium);
+    font-size: var(--text-sm);
+    font-family: var(--font-mono);
+    color: var(--accent-cyan);
+}
+
+.filter-pill-remove {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 14px;
+    height: 14px;
+    padding: 0;
+    margin-left: 2px;
+    background: transparent;
+    border: none;
+    color: var(--text-tertiary);
+    font-size: var(--text-sm);
+    line-height: 1;
+    cursor: pointer;
+    transition: color 0.15s;
+}
+
+.filter-pill-remove:hover {
+    color: var(--accent-red);
+}
+
+/* Narrow viewport adjustments */
+@media (max-width: 540px) {
+    .filter-bar {
+        padding: 4px 6px;
+    }
+
+    .filter-fields.expanded {
+        padding: 4px 6px 6px;
+    }
+
+    .btn-small {
+        padding: 2px 6px;
+        font-size: 9px;
+    }
+
+    .filter-pill {
+        padding: 1px 4px;
+        font-size: 10px;
+    }
+}
+
+/* ========================================
+   Material Tile Lite Style (Feature 3)
+   ======================================== */
+
+/* Lite style - underline only, no fill */
+.mat-tile.lite {
+    background: transparent !important;
+    text-shadow: none;
+    border: none;
+    border-bottom: 2px solid currentColor;
+    border-radius: 0;
+}
+
+.mat-tile.lite:hover {
+    filter: brightness(1.2);
+}
+
+/* Lite style for quick add chips */
+.chip.lite {
+    background: transparent !important;
+    text-shadow: none;
+    border: none;
+    border-bottom: 2px solid currentColor;
+    border-radius: 0;
+}
+
+.chip.lite:hover {
+    background: transparent !important;
+    filter: brightness(1.2);
+}
+
+/* Theme preview tiles - Lite style */
+.theme-preview-tile.lite {
+    background: transparent !important;
+    text-shadow: none;
+    border: none;
+    border-bottom: 2px solid currentColor;
+}
+
+/* ========================================
+   Theme Selector Refactor (Feature 3)
+   ======================================== */
+
+.theme-section {
+    margin-bottom: var(--space-lg);
+}
+
+.theme-section-label {
+    font-size: var(--text-xs);
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    color: var(--text-tertiary);
+    margin-bottom: var(--space-sm);
+}
+
+/* Horizontal palette options */
+.palette-options {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--space-sm);
+    margin-bottom: var(--space-md);
+}
+
+.palette-option {
+    display: flex;
+    align-items: center;
+    gap: var(--space-xs);
+    padding: var(--space-xs) var(--space-sm);
+    background: var(--bg-tertiary);
+    border: 2px solid transparent;
+    cursor: pointer;
+    transition: all 0.15s ease;
+}
+
+.palette-option:hover {
+    background: var(--bg-highlight);
+}
+
+.palette-option.selected {
+    border-color: var(--accent-yellow);
+    background: rgba(240, 184, 48, 0.05);
+}
+
+.palette-option input[type="radio"] {
+    display: none;
+}
+
+.palette-name {
+    font-size: var(--text-sm);
+    color: var(--text-primary);
+}
+
+/* Style options (Filled vs Lite) */
+.style-options {
+    display: flex;
+    gap: var(--space-sm);
+    margin-bottom: var(--space-md);
+}
+
+.style-option {
+    display: flex;
+    align-items: center;
+    gap: var(--space-sm);
+    padding: var(--space-sm) var(--space-md);
+    background: var(--bg-tertiary);
+    border: 2px solid transparent;
+    cursor: pointer;
+    transition: all 0.15s ease;
+    flex: 1;
+}
+
+.style-option:hover {
+    background: var(--bg-highlight);
+}
+
+.style-option.selected {
+    border-color: var(--accent-yellow);
+    background: rgba(240, 184, 48, 0.05);
+}
+
+.style-option input[type="radio"] {
+    display: none;
+}
+
+.style-radio-dot {
+    width: 16px;
+    height: 16px;
+    border: 2px solid var(--text-tertiary);
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+}
+
+.style-option.selected .style-radio-dot {
+    border-color: var(--accent-yellow);
+}
+
+.style-radio-dot::after {
+    content: '';
+    width: 8px;
+    height: 8px;
+    background: var(--accent-yellow);
+    border-radius: 50%;
+    opacity: 0;
+    transition: opacity 0.15s ease;
+}
+
+.style-option.selected .style-radio-dot::after {
+    opacity: 1;
+}
+
+.style-content {
+    flex: 1;
+}
+
+.style-name {
+    font-size: var(--text-sm);
+    font-weight: 600;
+    color: var(--text-primary);
+}
+
+.style-desc {
+    font-size: var(--text-xs);
+    color: var(--text-secondary);
+}
+
+/* Live preview section */
+.theme-live-preview {
+    padding: var(--space-md);
+    background: var(--bg-tertiary);
+    border: 1px solid var(--border-subtle);
+}
+
+.theme-live-preview-label {
+    font-size: var(--text-xs);
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    color: var(--text-tertiary);
+    margin-bottom: var(--space-sm);
+}
+
+.theme-live-preview-tiles {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--space-xs);
+}
+
+/* ========================================
+   Auto-apply Lite Style via data attribute
+   ======================================== */
+
+/* When data-tile-style="lite" is set on html, apply lite style to all tiles */
+[data-tile-style="lite"] .mat-tile {
+    background: transparent !important;
+    text-shadow: none;
+    border: none;
+    border-bottom: 2px solid currentColor;
+    border-radius: 0;
+}
+
+[data-tile-style="lite"] .mat-tile:hover {
+    filter: brightness(1.2);
+}
+
+/* More vivid colors for lite mat-tiles (matching chip lite colors) */
+[data-tile-style="lite"] .mat-tile-agricultural-products { color: #9ddf85; }
+[data-tile-style="lite"] .mat-tile-consumables-basic { color: #ff7a82; }
+[data-tile-style="lite"] .mat-tile-consumables-luxury { color: #ff9090; }
+[data-tile-style="lite"] .mat-tile-fuels { color: #b8ff70; }
+[data-tile-style="lite"] .mat-tile-liquids { color: #90e0ff; }
+[data-tile-style="lite"] .mat-tile-plastics { color: #ff8eef; }
+[data-tile-style="lite"] .mat-tile-ship-shields { color: #ffff60; }
+[data-tile-style="lite"] .mat-tile-alloys { color: #ffb850; }
+[data-tile-style="lite"] .mat-tile-chemicals { color: #ff90b8; }
+[data-tile-style="lite"] .mat-tile-construction-materials { color: #90c8ff; }
+[data-tile-style="lite"] .mat-tile-construction-parts { color: #70c0ff; }
+[data-tile-style="lite"] .mat-tile-construction-prefabs { color: #5090ff; }
+[data-tile-style="lite"] .mat-tile-drones { color: #ff8040; }
+[data-tile-style="lite"] .mat-tile-electronic-devices { color: #d070ff; }
+[data-tile-style="lite"] .mat-tile-electronic-parts { color: #c890ff; }
+[data-tile-style="lite"] .mat-tile-electronic-pieces { color: #d8b8ff; }
+[data-tile-style="lite"] .mat-tile-electronic-systems { color: #b860f0; }
+[data-tile-style="lite"] .mat-tile-elements { color: #d8a870; }
+[data-tile-style="lite"] .mat-tile-energy-systems { color: #50f0a0; }
+[data-tile-style="lite"] .mat-tile-gases { color: #40ffff; }
+[data-tile-style="lite"] .mat-tile-metals { color: #c8c8c8; }
+[data-tile-style="lite"] .mat-tile-minerals { color: #ffd090; }
+[data-tile-style="lite"] .mat-tile-ores { color: #c0d0e8; }
+[data-tile-style="lite"] .mat-tile-ship-engines { color: #ff6830; }
+[data-tile-style="lite"] .mat-tile-ship-kits { color: #ffb030; }
+[data-tile-style="lite"] .mat-tile-ship-parts { color: #ffc030; }
+[data-tile-style="lite"] .mat-tile-software-components { color: #f0e860; }
+[data-tile-style="lite"] .mat-tile-software-systems { color: #e0d030; }
+[data-tile-style="lite"] .mat-tile-software-tools { color: #ffe050; }
+[data-tile-style="lite"] .mat-tile-textiles { color: #c8f050; }
+[data-tile-style="lite"] .mat-tile-unit-prefabs { color: #b090a8; }
+[data-tile-style="lite"] .mat-tile-default { color: #50e8e8; }
+
+/* PrUn Default lite mat-tile colors (more vivid) */
+[data-tile-style="lite"][data-theme="prun-default"] .mat-tile-agricultural-products { color: #ff5050; }
+[data-tile-style="lite"][data-theme="prun-default"] .mat-tile-consumables-basic { color: #ff8080; }
+[data-tile-style="lite"][data-theme="prun-default"] .mat-tile-fuels { color: #60ff60; }
+[data-tile-style="lite"][data-theme="prun-default"] .mat-tile-liquids { color: #a0d8ff; }
+[data-tile-style="lite"][data-theme="prun-default"] .mat-tile-plastics { color: #ff60a0; }
+
+/* High Contrast lite mat-tile colors (extra vivid, matching high-contrast theme) */
+[data-tile-style="lite"][data-theme="high-contrast"] .mat-tile-agricultural-products { color: #90ee90; }
+[data-tile-style="lite"][data-theme="high-contrast"] .mat-tile-consumables-basic { color: #ff6b6b; }
+[data-tile-style="lite"][data-theme="high-contrast"] .mat-tile-consumables-luxury { color: #ff8888; }
+[data-tile-style="lite"][data-theme="high-contrast"] .mat-tile-fuels { color: #98fb98; }
+[data-tile-style="lite"][data-theme="high-contrast"] .mat-tile-liquids { color: #87ceff; }
+[data-tile-style="lite"][data-theme="high-contrast"] .mat-tile-plastics { color: #ff80ff; }
+[data-tile-style="lite"][data-theme="high-contrast"] .mat-tile-ship-shields { color: #ffff00; }
+[data-tile-style="lite"][data-theme="high-contrast"] .mat-tile-alloys { color: #ffd700; }
+[data-tile-style="lite"][data-theme="high-contrast"] .mat-tile-chemicals { color: #ffb6c1; }
+[data-tile-style="lite"][data-theme="high-contrast"] .mat-tile-construction-materials { color: #b0c4ff; }
+[data-tile-style="lite"][data-theme="high-contrast"] .mat-tile-construction-parts { color: #add8e6; }
+[data-tile-style="lite"][data-theme="high-contrast"] .mat-tile-construction-prefabs { color: #87ceeb; }
+[data-tile-style="lite"][data-theme="high-contrast"] .mat-tile-drones { color: #ffa07a; }
+[data-tile-style="lite"][data-theme="high-contrast"] .mat-tile-electronic-devices { color: #e6e6fa; }
+[data-tile-style="lite"][data-theme="high-contrast"] .mat-tile-electronic-parts { color: #dcd0ff; }
+[data-tile-style="lite"][data-theme="high-contrast"] .mat-tile-electronic-pieces { color: #ffffff; }
+[data-tile-style="lite"][data-theme="high-contrast"] .mat-tile-electronic-systems { color: #dda0dd; }
+[data-tile-style="lite"][data-theme="high-contrast"] .mat-tile-elements { color: #f5deb3; }
+[data-tile-style="lite"][data-theme="high-contrast"] .mat-tile-energy-systems { color: #98fb98; }
+[data-tile-style="lite"][data-theme="high-contrast"] .mat-tile-gases { color: #00ffff; }
+[data-tile-style="lite"][data-theme="high-contrast"] .mat-tile-metals { color: #dcdcdc; }
+[data-tile-style="lite"][data-theme="high-contrast"] .mat-tile-minerals { color: #ffe4c4; }
+[data-tile-style="lite"][data-theme="high-contrast"] .mat-tile-ores { color: #e0e0e0; }
+[data-tile-style="lite"][data-theme="high-contrast"] .mat-tile-ship-engines { color: #ffc0cb; }
+[data-tile-style="lite"][data-theme="high-contrast"] .mat-tile-ship-kits { color: #fffacd; }
+[data-tile-style="lite"][data-theme="high-contrast"] .mat-tile-ship-parts { color: #ffa500; }
+[data-tile-style="lite"][data-theme="high-contrast"] .mat-tile-software-components { color: #adff2f; }
+[data-tile-style="lite"][data-theme="high-contrast"] .mat-tile-software-systems { color: #f0e68c; }
+[data-tile-style="lite"][data-theme="high-contrast"] .mat-tile-software-tools { color: #bdb76b; }
+[data-tile-style="lite"][data-theme="high-contrast"] .mat-tile-textiles { color: #7cfc00; }
+[data-tile-style="lite"][data-theme="high-contrast"] .mat-tile-unit-prefabs { color: #c0c0c0; }
+
+/* Monochrome lite mat-tile colors (stay grey) */
+[data-tile-style="lite"][data-theme="monochrome"] .mat-tile,
+[data-tile-style="lite"][data-theme="monochrome"] .mat-tile[class*="mat-tile-"] { color: #c8c8d0; }
+
+/* Lite style for chips via data attribute */
+[data-tile-style="lite"] .chip[class*="chip-"]:not(.chip-more) {
+    background: transparent !important;
+    border: none;
+    border-bottom: 2px solid currentColor;
+    border-radius: 0;
+}
+
+[data-tile-style="lite"] .chip[class*="chip-"]:not(.chip-more):hover {
+    background: transparent !important;
+    filter: brightness(1.2);
 }

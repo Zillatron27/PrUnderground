@@ -1,5 +1,5 @@
 {% extends "base.html" %}
-{% from "macros/responsive.html" import seller_display, cx_location, bundle_price_display, bundle_quantity_display, date_display %}
+{% from "macros/responsive.html" import seller_display, cx_location, bundle_price_display, bundle_quantity_display, bundle_status_badge, bundle_status_dot, date_display %}
 
 {% block content %}
 <div class="browse-page">
@@ -10,32 +10,42 @@
         <a href="/bundles" class="browse-tab active">Bundles</a>
     </div>
 
-    <form class="filter-form" method="get" action="/bundles">
-        <div class="filter-row">
-            <div class="filter-group">
-                <label for="location">Location</label>
-                <select id="location" name="location">
-                    <option value="">All locations</option>
-                    {% for loc in available_locations %}
-                    <option value="{{ loc }}" {% if loc == filter_location %}selected{% endif %}>
-                        {{ loc }}
-                    </option>
-                    {% endfor %}
-                </select>
-                <span class="help-text">&nbsp;</span>
+    {# Collapsible filter section #}
+    <div class="filter-section">
+        <div class="filter-bar">
+            <button type="button" class="btn-small" id="filter-toggle">
+                <span class="filter-toggle-show">show filters</span>
+                <span class="filter-toggle-hide">hide filters</span>
+            </button>
+            <div class="active-filters" id="active-filters">
+                {% if filter_location %}
+                <span class="filter-pill" data-type="location" data-value="{{ filter_location }}">
+                    @ {{ filter_location }}
+                    <button type="button" class="filter-pill-remove" aria-label="Remove filter">&times;</button>
+                </span>
+                {% endif %}
             </div>
-            <div class="filter-group filter-actions-group">
-                <label>&nbsp;</label>
-                <div class="filter-actions">
-                    <button type="submit" class="btn btn-primary">Search</button>
-                    {% if filter_location %}
-                    <a href="/bundles" class="btn btn-secondary">Clear</a>
-                    {% endif %}
+            {% if filter_location %}
+            <button type="button" class="btn-small" id="filter-clear">clear all</button>
+            {% endif %}
+        </div>
+        <div class="filter-fields" id="filter-fields">
+            <div class="filter-row">
+                <div class="filter-group">
+                    <label for="location">Location</label>
+                    <select id="location" name="location">
+                        <option value="">All locations</option>
+                        {% for loc in available_locations %}
+                        <option value="{{ loc }}" {% if loc == filter_location %}selected{% endif %}>
+                            {{ loc }}
+                        </option>
+                        {% endfor %}
+                    </select>
+                    <span class="help-text">&nbsp;</span>
                 </div>
-                <span class="help-text">&nbsp;</span>
             </div>
         </div>
-    </form>
+    </div>
 
     {% if bundles %}
     <div class="table-wrapper">
@@ -44,6 +54,7 @@
             <tr>
                 <th class="col-seller">Seller</th>
                 <th class="col-name">Bundle</th>
+                <th class="col-status">Status</th>
                 <th class="col-items">Items</th>
                 <th class="col-quantity">Qty</th>
                 <th class="col-price">Price</th>
@@ -56,7 +67,11 @@
             {% for bundle in bundles %}
             <tr>
                 <td class="col-seller">{{ seller_display(bundle.user) }}</td>
-                <td class="col-name"><strong>{{ bundle.name }}</strong></td>
+                <td class="col-name" title="{{ bundle.name }}"><strong>{{ bundle.name }}</strong></td>
+                <td class="col-status">
+                    <span class="status-wide">{{ bundle_status_badge(bundle) }}</span>
+                    <span class="status-medium">{{ bundle_status_dot(bundle) }}</span>
+                </td>
                 <td class="col-items">{{ bundle.items|length }}</td>
                 <td class="col-quantity">{{ bundle_quantity_display(bundle) }}</td>
                 <td class="col-price">{{ bundle_price_display(bundle) }}</td>
@@ -95,5 +110,63 @@ document.addEventListener('keydown', function(e) {
         closeModal();
     }
 });
+
+(function() {
+    // Filter Section
+    const filterToggle = document.getElementById('filter-toggle');
+    const filterFields = document.getElementById('filter-fields');
+    const filterClear = document.getElementById('filter-clear');
+    const locationSelect = document.getElementById('location');
+
+    // Toggle filter visibility
+    if (filterToggle && filterFields) {
+        const filterSection = document.querySelector('.filter-section');
+        filterToggle.addEventListener('click', () => {
+            filterFields.classList.toggle('expanded');
+            if (filterSection) {
+                filterSection.classList.toggle('filters-expanded', filterFields.classList.contains('expanded'));
+            }
+        });
+    }
+
+    // Apply filter on location change
+    if (locationSelect) {
+        locationSelect.addEventListener('change', () => {
+            const url = new URL(window.location.href);
+            const location = locationSelect.value;
+
+            if (location) {
+                url.searchParams.set('location', location);
+            } else {
+                url.searchParams.delete('location');
+            }
+
+            window.location.href = url.toString();
+        });
+    }
+
+    // Clear all filters
+    if (filterClear) {
+        filterClear.addEventListener('click', () => {
+            window.location.href = '/bundles';
+        });
+    }
+
+    // Remove individual filter pills
+    document.querySelectorAll('.filter-pill-remove').forEach(btn => {
+        btn.addEventListener('click', (e) => {
+            e.stopPropagation();
+            const pill = btn.closest('.filter-pill');
+            const type = pill.dataset.type;
+            const url = new URL(window.location.href);
+
+            if (type === 'location') {
+                url.searchParams.delete('location');
+            }
+
+            window.location.href = url.toString();
+        });
+    });
+})();
 </script>
 {% endblock %}

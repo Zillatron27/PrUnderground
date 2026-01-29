@@ -96,20 +96,29 @@
             <div class="form-group">
                 <label for="discord_template">Custom Template</label>
                 <textarea id="discord_template" name="discord_template" rows="8"
-                          placeholder="Leave blank to use default format">{{ user.discord_template or '' }}</textarea>
+                          placeholder="Leave blank to use default format"
+                          hx-post="/auth/preview-discord-template"
+                          hx-trigger="input changed delay:500ms, load"
+                          hx-target="#discord-preview"
+                          hx-include="[name='discord_template']">{{ user.discord_template or '' }}</textarea>
             </div>
 
-            <details class="template-help">
+            <div class="form-group">
+                <label>Preview</label>
+                <div id="discord-preview" class="discord-preview">
+                    <div class="discord-preview-content">Loading preview...</div>
+                </div>
+            </div>
+
+            <details class="template-help" style="margin-bottom: 1rem;">
                 <summary>Available Variables</summary>
                 <div class="template-variables">
                     <ul>
                         <li><code>{company_code}</code> - Your company code (e.g., "ABC")</li>
                         <li><code>{username}</code> - Your FIO username</li>
-                        <li><code>{date}</code> - Current date (e.g., "28 Jan 2026")</li>
+                        <li><code>{date}</code> - Discord relative timestamp showing last sync</li>
                         <li><code>{profile_url}</code> - Link to your profile page</li>
                         <li><code>{listings_by_location}</code> - Auto-formatted listings grouped by location</li>
-                        <li><code>{listing_count}</code> - Total number of active listings</li>
-                        <li><code>{location_count}</code> - Number of unique locations</li>
                     </ul>
                 </div>
             </details>
@@ -179,8 +188,19 @@
 
 <script>
 function resetTemplate() {
-    document.getElementById('discord_template').value = '';
+    const textarea = document.getElementById('discord_template');
+    textarea.value = '';
+    // Trigger HTMX to refresh the preview
+    htmx.trigger(textarea, 'input');
 }
+
+// Trigger initial preview load
+document.addEventListener('DOMContentLoaded', function() {
+    const textarea = document.getElementById('discord_template');
+    if (textarea) {
+        htmx.trigger(textarea, 'input');
+    }
+});
 
 document.getElementById('import-form').addEventListener('submit', async function(e) {
     e.preventDefault();

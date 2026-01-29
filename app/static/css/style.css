@@ -1016,6 +1016,27 @@ table tbody tr:hover {
     margin: var(--space-sm) 0;
 }
 
+.discord-preview {
+    background: var(--bg-elevated);
+    border: 1px solid var(--border-subtle);
+    border-radius: var(--radius-sm);
+    padding: var(--space-md);
+    font-family: var(--font-mono);
+    font-size: var(--text-sm);
+    max-height: 300px;
+    overflow-y: auto;
+}
+
+.discord-preview-content {
+    color: var(--text-secondary);
+    white-space: pre-wrap;
+    word-break: break-word;
+}
+
+.discord-preview-error {
+    color: var(--color-error);
+}
+
 .data-list {
     margin-left: var(--space-lg);
     margin-bottom: var(--space-sm);

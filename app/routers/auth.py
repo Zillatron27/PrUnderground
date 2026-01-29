@@ -389,6 +389,54 @@ async def update_discord_template(
     return RedirectResponse(url="/auth/account?template_updated=1", status_code=303)
 
 
+@router.post("/preview-discord-template", response_class=HTMLResponse)
+async def preview_discord_template(
+    request: Request,
+    discord_template: Optional[str] = Form(None),
+    db: Session = Depends(get_db),
+):
+    """Render a preview of the Discord template with the user's listings."""
+    user = get_current_user(request, db)
+    if not user:
+        return HTMLResponse("<div class='preview-error'>Not logged in</div>", status_code=401)
+
+    from datetime import datetime
+    from sqlalchemy import or_
+    from ..services.discord_format import render_discord, DEFAULT_TEMPLATE
+
+    # Get user's active listings for preview (not expired)
+    from ..models import Listing
+    now = datetime.utcnow()
+    listings = db.query(Listing).filter(
+        Listing.user_id == user.id,
+        or_(Listing.expires_at.is_(None), Listing.expires_at > now)
+    ).all()
+
+    # Use provided template or default
+    template = discord_template.strip() if discord_template and discord_template.strip() else None
+
+    # Temporarily set user's template for rendering
+    original_template = user.discord_template
+    user.discord_template = template
+
+    # Get base URL for profile link
+    base_url = str(request.base_url).rstrip("/")
+
+    try:
+        preview_text = render_discord(user, listings, base_url)
+    finally:
+        # Restore original template (don't save to DB)
+        user.discord_template = original_template
+
+    # Return as preformatted text in a preview container
+    # Escape HTML but preserve newlines
+    import html
+    escaped = html.escape(preview_text)
+    formatted = escaped.replace("\n", "<br>")
+
+    return HTMLResponse(f'<div class="discord-preview-content">{formatted}</div>')
+
+
 @router.get("/logout")
 async def logout(request: Request, db: Session = Depends(get_db)):
     """Log out the current user."""

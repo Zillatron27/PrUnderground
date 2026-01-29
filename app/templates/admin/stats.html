@@ -5,6 +5,33 @@
     <h1>Admin Dashboard</h1>
 
     <section class="admin-section">
+        <h2>Admin Actions</h2>
+        <div class="admin-actions">
+            <div class="action-group">
+                <button class="btn btn-primary"
+                        hx-post="/admin/force-cx-sync"
+                        hx-target="#cx-sync-result"
+                        hx-swap="innerHTML"
+                        hx-indicator="#cx-sync-spinner">
+                    Force CX Update
+                </button>
+                <span id="cx-sync-spinner" class="htmx-indicator">Syncing...</span>
+                <span id="cx-sync-result"></span>
+            </div>
+            <div class="action-group">
+                <button class="btn btn-danger"
+                        hx-post="/admin/restart"
+                        hx-target="#restart-result"
+                        hx-swap="innerHTML"
+                        hx-confirm="Are you sure you want to restart the container? The service will be briefly unavailable.">
+                    Restart Container
+                </button>
+                <span id="restart-result"></span>
+            </div>
+        </div>
+    </section>
+
+    <section class="admin-section">
         <h2>Overview</h2>
         <div class="stats-grid">
             <div class="stat-card">
@@ -96,6 +123,45 @@
 
 .admin-section {
     margin-bottom: var(--space-xl);
+}
+
+.admin-actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--space-lg);
+    align-items: center;
+}
+
+.action-group {
+    display: flex;
+    align-items: center;
+    gap: var(--space-sm);
+}
+
+.btn-danger {
+    background: var(--color-danger, #dc3545);
+    color: white;
+}
+
+.btn-danger:hover {
+    background: var(--color-danger-hover, #c82333);
+}
+
+.success-message {
+    color: var(--color-success, #28a745);
+}
+
+.error-message {
+    color: var(--color-danger, #dc3545);
+}
+
+.htmx-indicator {
+    display: none;
+}
+
+.htmx-request .htmx-indicator,
+.htmx-request.htmx-indicator {
+    display: inline;
 }
 
 .stats-grid {

@@ -28,8 +28,6 @@ ALLOWED_VARS = [
     "date",
     "profile_url",
     "listings_by_location",  # Special: rendered listing groups
-    "listing_count",
-    "location_count",
 ]
 
 # Variables available per-listing (for advanced templates)
@@ -47,11 +45,9 @@ def get_variable_help() -> str:
     return """Available variables:
 - {company_code} - Your company code (e.g., "ABC")
 - {username} - Your FIO username
-- {date} - Current date (e.g., "28 Jan 2026")
+- {date} - Discord relative timestamp showing last sync
 - {profile_url} - Link to your profile page
 - {listings_by_location} - Auto-formatted listings grouped by location
-- {listing_count} - Total number of active listings
-- {location_count} - Number of unique locations
 
 The {listings_by_location} block formats as:
 **Location Name:**
@@ -132,14 +128,12 @@ def render_discord(user: "User", listings: list, base_url: str) -> str:
     template = user.discord_template or DEFAULT_TEMPLATE
 
     # Build context variables
-    date_str = datetime.utcnow().strftime("%d %b %Y")
-    profile_url = f"{base_url}/u/{user.fio_username}"
+    # Use Discord relative timestamp format based on last FIO sync
+    sync_time = user.fio_last_synced or datetime.utcnow()
+    unix_timestamp = int(sync_time.timestamp())
+    date_str = f"<t:{unix_timestamp}:R>"
 
-    # Get unique locations
-    locations = set()
-    for listing in listings:
-        loc = listing.storage_name or listing.location or "Unknown"
-        locations.add(loc)
+    profile_url = f"{base_url}/u/{user.fio_username}"
 
     # Build the listings_by_location content
     listings_by_location = render_listings_by_location(listings)
@@ -151,8 +145,6 @@ def render_discord(user: "User", listings: list, base_url: str) -> str:
         "date": date_str,
         "profile_url": profile_url,
         "listings_by_location": listings_by_location,
-        "listing_count": str(len(listings)),
-        "location_count": str(len(locations)),
     }
 
     # Perform substitution using safe string formatting

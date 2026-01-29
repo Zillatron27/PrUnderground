@@ -1,7 +1,7 @@
 """Admin router for statistics dashboard and admin-only features."""
 
 import logging
-import sys
+import os
 from datetime import date, timedelta
 from fastapi import APIRouter, Depends, HTTPException, Request
 from fastapi.responses import HTMLResponse
@@ -120,7 +120,7 @@ async def restart_container(
     async def delayed_exit():
         await asyncio.sleep(0.5)
         logger.info("Exiting process for restart...")
-        sys.exit(0)
+        os._exit(0)
 
     asyncio.create_task(delayed_exit())
 

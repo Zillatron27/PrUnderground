@@ -31,15 +31,13 @@ You *can* run it just for yourself as a personal storefront, but the real value 
 - **Theme Customization** - 4 color palettes (Refined PrUn, PrUn Default, High Contrast, Monochrome) × 2 tile styles (Filled, Lite). Live preview in Account Settings.
 
 ## Screenshots
-<img width="1024" height="768" alt="login" src="https://github.com/user-attachments/assets/ad45758e-068e-4597-b751-8cd1264b6eae" />
 
-<img width="1024" height="768" alt="dashboard" src="https://github.com/user-attachments/assets/d1cfaf9c-a735-4c02-a3b6-96026298c3e3" />
-
-<img width="1024" height="768" alt="publicprofile" src="https://github.com/user-attachments/assets/1aa5d7dd-7957-4f34-b9b3-c9838e052cc3" />
-
-<img width="1024" height="768" alt="browse" src="https://github.com/user-attachments/assets/cc3712e0-6929-4800-b872-87890384af69" />
-
-<img width="1024" height="768" alt="account" src="https://github.com/user-attachments/assets/ba3024ca-20a1-47df-960d-0ca2a193c9f9" />
+<img width="1447" height="1602" alt="image" src="https://github.com/user-attachments/assets/bf15dd83-90b8-4191-b79c-f8e7f316d0f0" />
+<img width="1752" height="1903" alt="image" src="https://github.com/user-attachments/assets/db912f27-8594-4fce-82e4-b872b19860db" />
+<img width="1440" height="1761" alt="image" src="https://github.com/user-attachments/assets/ac0e72e7-b5e6-41f4-baa8-35bd9f29a071" />
+<img width="1452" height="1068" alt="image" src="https://github.com/user-attachments/assets/afcc38c7-3a28-4e4b-8a82-601d2c51db98" />
+<img width="1452" height="1553" alt="image" src="https://github.com/user-attachments/assets/89415144-7a9d-4711-aaa2-6d47fa9696df" />
+<img width="1452" height="549" alt="image" src="https://github.com/user-attachments/assets/9f949f2a-d25f-46c3-aabc-487471ba77df" />
 
 ## Setup
 

@@ -11,7 +11,7 @@ if TYPE_CHECKING:
 # Example: ADMIN_USERNAMES=Zillatron,OtherAdmin
 _admin_usernames_raw = os.getenv("ADMIN_USERNAMES", "")
 ADMIN_USERNAMES = [
-    name.strip()
+    name.strip().lower()
     for name in _admin_usernames_raw.split(",")
     if name.strip()
 ]
@@ -29,4 +29,4 @@ def is_admin(user: "User | None") -> bool:
     """
     if not user:
         return False
-    return user.fio_username in ADMIN_USERNAMES
+    return user.fio_username.lower() in ADMIN_USERNAMES

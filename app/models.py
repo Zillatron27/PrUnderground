@@ -47,6 +47,8 @@ class User(Base):
     fio_api_key = Column(String(256), nullable=True)  # Encrypted with Fernet (see encryption.py)
     fio_last_synced = Column(DateTime, nullable=True)  # When FIO data was last pulled
     discord_template = Column(Text, nullable=True)  # Custom Discord copy format template
+    color_palette = Column(String(20), nullable=True)  # Theme color palette preference
+    tile_style = Column(String(20), nullable=True)  # Tile style preference (filled/lite)
     created_at = Column(DateTime, default=datetime.utcnow)
     updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
 

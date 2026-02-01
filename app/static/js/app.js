@@ -1,14 +1,50 @@
 // PrUnderground JavaScript
 
+// ========================================
+// Embed Mode Detection (rPrUn iframe)
+// ========================================
+
+/**
+ * Check if we're running in embed mode inside an iframe
+ * Embed mode is triggered by ?embed=1 URL parameter
+ */
+function isEmbedMode() {
+    return window.self !== window.top &&
+           new URLSearchParams(window.location.search).get('embed') === '1';
+}
+
 // Show spinner during page loads (navigation, form submits)
 function showSpinner() {
     document.body.classList.add('loading');
 }
 
-// Trigger spinner on link clicks (except # anchors and external links)
+// Trigger spinner on link clicks (except # anchors)
+// In embed mode, intercept and send postMessage to parent instead of navigating
 document.addEventListener('click', function(e) {
     const link = e.target.closest('a');
-    if (link && link.href && !link.href.startsWith('#') && link.hostname === window.location.hostname) {
+    if (!link || !link.href || link.href.startsWith('#')) {
+        return;
+    }
+
+    var isInternal = link.hostname === window.location.hostname;
+
+    if (isEmbedMode()) {
+        // In embed mode - send postMessage to parent instead of navigating
+        e.preventDefault();
+
+        var message = {
+            type: 'pru:navigate',
+            path: isInternal ? link.pathname + link.search : null,
+            url: link.href
+        };
+
+        if (!isInternal) {
+            message.external = true;
+        }
+
+        window.parent.postMessage(message, '*');
+    } else if (isInternal) {
+        // Normal mode - show spinner for internal links
         showSpinner();
     }
 });
@@ -62,6 +98,15 @@ document.addEventListener('DOMContentLoaded', function() {
             this.value = this.value.replace(/\b\w/g, l => l.toUpperCase());
         });
     });
+
+    // Announce ready state to parent if in embed mode
+    if (isEmbedMode()) {
+        window.parent.postMessage({
+            type: 'pru:ready',
+            path: window.location.pathname + window.location.search,
+            url: window.location.href
+        }, '*');
+    }
 });
 
 // Re-format and re-style after HTMX content swaps
@@ -76,23 +121,25 @@ document.addEventListener('htmx:afterSwap', function() {
 // ========================================
 
 /**
- * Get the current color palette from localStorage
+ * Get the current color palette from DOM attribute (set by server or localStorage fallback)
  */
 function getTheme() {
-    return localStorage.getItem('pru-theme') || 'refined-prun';
+    return document.documentElement.getAttribute('data-theme') || 'refined-prun';
 }
 
 /**
- * Set the color palette and persist to localStorage
+ * Set the color palette and persist to server (falls back to localStorage for unauthenticated users)
  */
 function setTheme(theme) {
-    localStorage.setItem('pru-theme', theme);
     document.documentElement.setAttribute('data-theme', theme);
 
     // Update theme selector UI if present
     updateThemeSelector(theme);
     // Update live preview
     updateLivePreview();
+
+    // Save to server (falls back to localStorage on failure/401)
+    saveThemePreference('color_palette', theme);
 }
 
 /**
@@ -162,17 +209,16 @@ function initThemeSelector() {
 // ========================================
 
 /**
- * Get the current tile style from localStorage
+ * Get the current tile style from DOM attribute (set by server or localStorage fallback)
  */
 function getTileStyle() {
-    return localStorage.getItem('pru-tile-style') || 'filled';
+    return document.documentElement.getAttribute('data-tile-style') || 'filled';
 }
 
 /**
- * Set the tile style and persist to localStorage
+ * Set the tile style and persist to server (falls back to localStorage for unauthenticated users)
  */
 function setTileStyle(style) {
-    localStorage.setItem('pru-tile-style', style);
     document.documentElement.setAttribute('data-tile-style', style);
 
     // Update style selector UI if present
@@ -181,6 +227,9 @@ function setTileStyle(style) {
     applyTileStyle(style);
     // Update live preview
     updateLivePreview();
+
+    // Save to server (falls back to localStorage on failure/401)
+    saveThemePreference('tile_style', style);
 }
 
 /**
@@ -270,17 +319,88 @@ function initStyleSelector() {
 }
 
 /**
+ * Save a theme preference to the server via AJAX POST
+ * Falls back to localStorage on 401 (unauthenticated) or network error
+ */
+function saveThemePreference(field, value) {
+    var csrfToken = document.querySelector('meta[name="csrf-token"]');
+    var token = csrfToken ? csrfToken.getAttribute('content') : '';
+
+    var formData = new FormData();
+    formData.append(field, value);
+    formData.append('csrf_token', token);
+
+    fetch('/auth/update-theme', {
+        method: 'POST',
+        body: formData,
+        credentials: 'same-origin'
+    }).then(function(response) {
+        if (response.status === 401) {
+            // Not authenticated - save to localStorage as fallback
+            var storageKey = field === 'color_palette' ? 'pru-theme' : 'pru-tile-style';
+            localStorage.setItem(storageKey, value);
+        } else if (!response.ok) {
+            console.warn('Failed to save theme preference:', response.statusText);
+        }
+    }).catch(function(err) {
+        // Network error - save to localStorage as fallback
+        var storageKey = field === 'color_palette' ? 'pru-theme' : 'pru-tile-style';
+        localStorage.setItem(storageKey, value);
+        console.warn('Network error saving theme, using localStorage fallback:', err);
+    });
+}
+
+/**
+ * Migrate localStorage theme preferences to server (one-time on page load)
+ * Runs once when a user has localStorage values but server doesn't have them yet
+ */
+function migrateLocalStorageTheme() {
+    var localTheme = localStorage.getItem('pru-theme');
+    var localStyle = localStorage.getItem('pru-tile-style');
+
+    // Only migrate if we have localStorage values
+    if (!localTheme && !localStyle) {
+        return;
+    }
+
+    var csrfToken = document.querySelector('meta[name="csrf-token"]');
+    var token = csrfToken ? csrfToken.getAttribute('content') : '';
+
+    var formData = new FormData();
+    if (localTheme) {
+        formData.append('color_palette', localTheme);
+    }
+    if (localStyle) {
+        formData.append('tile_style', localStyle);
+    }
+    formData.append('csrf_token', token);
+
+    fetch('/auth/update-theme', {
+        method: 'POST',
+        body: formData,
+        credentials: 'same-origin'
+    }).then(function(response) {
+        if (response.ok) {
+            // Successfully migrated - clear localStorage
+            localStorage.removeItem('pru-theme');
+            localStorage.removeItem('pru-tile-style');
+        }
+        // 401 = not authenticated, silent no-op (correct behavior)
+        // Other errors = retry next page load
+    }).catch(function(err) {
+        // Network error - retry next page load
+        console.warn('Failed to migrate theme preferences:', err);
+    });
+}
+
+/**
  * Initialize both theme and style on page load
  */
 function initThemeAndStyle() {
-    // Apply saved theme
-    const savedTheme = getTheme();
-    document.documentElement.setAttribute('data-theme', savedTheme);
-
-    // Apply saved tile style
-    const savedStyle = getTileStyle();
-    document.documentElement.setAttribute('data-tile-style', savedStyle);
-    applyTileStyle(savedStyle);
+    // Theme and tile style are already applied by inline script in base.html
+    // Just apply the tile style classes to elements
+    var currentStyle = getTileStyle();
+    applyTileStyle(currentStyle);
 
     // Initialize selectors if on settings page
     initThemeSelector();
@@ -288,6 +408,9 @@ function initThemeAndStyle() {
 
     // Update live preview if present
     updateLivePreview();
+
+    // Attempt to migrate localStorage preferences to server
+    migrateLocalStorageTheme();
 }
 
 // Initialize theme and style when DOM is ready

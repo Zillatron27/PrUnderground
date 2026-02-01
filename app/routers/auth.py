@@ -1,7 +1,7 @@
 import os
 import logging
 from fastapi import APIRouter, Depends, HTTPException, Request, Form
-from fastapi.responses import HTMLResponse, RedirectResponse
+from fastapi.responses import HTMLResponse, RedirectResponse, JSONResponse
 from sqlalchemy.orm import Session
 from typing import Optional
 from itsdangerous import URLSafeTimedSerializer, BadSignature, SignatureExpired
@@ -387,6 +387,47 @@ async def update_discord_template(
     db.commit()
 
     return RedirectResponse(url="/auth/account?template_updated=1", status_code=303)
+
+
+@router.post("/update-theme")
+async def update_theme(
+    request: Request,
+    color_palette: Optional[str] = Form(None),
+    tile_style: Optional[str] = Form(None),
+    csrf_token: str = Form(None),
+    db: Session = Depends(get_db),
+):
+    """Update the user's theme preferences (color palette and/or tile style)."""
+    await verify_csrf(request, csrf_token)
+    user = get_current_user(request, db)
+    if not user:
+        return JSONResponse({"ok": False, "error": "Not authenticated"}, status_code=401)
+
+    # Allowed values
+    valid_palettes = {"refined-prun", "prun-default", "high-contrast", "monochrome"}
+    valid_styles = {"filled", "lite"}
+
+    # Validate and update color_palette if provided
+    if color_palette is not None:
+        if color_palette not in valid_palettes:
+            return JSONResponse(
+                {"ok": False, "error": f"Invalid color_palette: {color_palette}"},
+                status_code=400
+            )
+        user.color_palette = color_palette
+
+    # Validate and update tile_style if provided
+    if tile_style is not None:
+        if tile_style not in valid_styles:
+            return JSONResponse(
+                {"ok": False, "error": f"Invalid tile_style: {tile_style}"},
+                status_code=400
+            )
+        user.tile_style = tile_style
+
+    db.commit()
+
+    return JSONResponse({"ok": True})
 
 
 @router.post("/preview-discord-template", response_class=HTMLResponse)

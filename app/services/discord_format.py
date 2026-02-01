@@ -1,6 +1,7 @@
 """Discord formatting service for customizable copy/paste text."""
 
 import re
+import time
 from datetime import datetime
 from typing import TYPE_CHECKING
 
@@ -45,7 +46,7 @@ def get_variable_help() -> str:
     return """Available variables:
 - {company_code} - Your company code (e.g., "ABC")
 - {username} - Your FIO username
-- {date} - Discord relative timestamp showing last sync
+- {date} - Discord relative timestamp (when copied)
 - {profile_url} - Link to your profile page
 - {listings_by_location} - Auto-formatted listings grouped by location
 
@@ -128,9 +129,9 @@ def render_discord(user: "User", listings: list, base_url: str) -> str:
     template = user.discord_template or DEFAULT_TEMPLATE
 
     # Build context variables
-    # Use Discord relative timestamp format based on last FIO sync
-    sync_time = user.fio_last_synced or datetime.utcnow()
-    unix_timestamp = int(sync_time.timestamp())
+    # Use Discord relative timestamp format based on current time (when copied)
+    # time.time() returns UTC Unix timestamp directly, avoiding timezone issues
+    unix_timestamp = int(time.time())
     date_str = f"<t:{unix_timestamp}:R>"
 
     profile_url = f"{base_url}/u/{user.fio_username}"

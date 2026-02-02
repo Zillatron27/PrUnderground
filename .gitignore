@@ -51,3 +51,6 @@ htmlcov/
 
 # Logs
 *.log
+
+# Claude Code config (stored in private repo)
+CLAUDE.md

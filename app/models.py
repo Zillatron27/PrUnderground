@@ -46,6 +46,8 @@ class User(Base):
     discord_id = Column(String(50), unique=True, nullable=True)
     fio_api_key = Column(String(256), nullable=True)  # Encrypted with Fernet (see encryption.py)
     fio_last_synced = Column(DateTime, nullable=True)  # When FIO data was last pulled
+    managing_director = Column(String(100), nullable=True)  # In-game MD name for contracts
+    discord_username = Column(String(32), nullable=True)  # Discord username for out-of-game contact
     discord_template = Column(Text, nullable=True)  # Custom Discord copy format template
     color_palette = Column(String(20), nullable=True)  # Theme color palette preference
     tile_style = Column(String(20), nullable=True)  # Tile style preference (filled/lite)

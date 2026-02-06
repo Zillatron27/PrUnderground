@@ -117,6 +117,29 @@ document.addEventListener('htmx:afterSwap', function() {
 });
 
 // ========================================
+// Copy-to-Clipboard (Seller Contact)
+// ========================================
+
+/**
+ * Copy text to clipboard and show brief "copied" feedback on the button.
+ * Used by data-copy buttons on seller contact info.
+ */
+document.addEventListener('click', function(e) {
+    var btn = e.target.closest('.copy-btn');
+    if (!btn) return;
+
+    var text = btn.getAttribute('data-copy');
+    if (!text) return;
+
+    navigator.clipboard.writeText(text).then(function() {
+        btn.classList.add('copied');
+        setTimeout(function() {
+            btn.classList.remove('copied');
+        }, 1500);
+    });
+});
+
+// ========================================
 // Theme Switching (Color Palette)
 // ========================================
 

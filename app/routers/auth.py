@@ -349,6 +349,37 @@ async def refresh_api_key(
         await client.close()
 
 
+@router.post("/update-contact")
+async def update_contact_info(
+    request: Request,
+    managing_director: Optional[str] = Form(None),
+    discord_username: Optional[str] = Form(None),
+    csrf_token: str = Form(None),
+    db: Session = Depends(get_db),
+):
+    """Update the user's contact information (MD name and Discord username)."""
+    await verify_csrf(request, csrf_token)
+    user = get_current_user(request, db)
+    if not user:
+        return RedirectResponse(url="/auth/login", status_code=303)
+
+    # Clean and validate managing_director
+    if managing_director and managing_director.strip():
+        user.managing_director = managing_director.strip()[:100]
+    else:
+        user.managing_director = None
+
+    # Clean and validate discord_username
+    if discord_username and discord_username.strip():
+        user.discord_username = discord_username.strip()[:32]
+    else:
+        user.discord_username = None
+
+    db.commit()
+
+    return RedirectResponse(url="/auth/account?contact_updated=1", status_code=303)
+
+
 @router.post("/update-discord-template")
 async def update_discord_template(
     request: Request,

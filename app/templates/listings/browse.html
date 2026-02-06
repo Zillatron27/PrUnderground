@@ -72,7 +72,7 @@
     </div>
 
     {% if listings %}
-    {% if sort_spec != [('updated', 'desc')] %}
+    {% if sort_spec != [('status', 'asc'), ('updated', 'desc')] %}
     <div class="sort-builder" id="sort-builder">
         <span class="sort-label">Sort:</span>
         <div class="sort-chips" id="sort-chips">
@@ -97,7 +97,10 @@
                     Material
                     {% for col, dir in sort_spec %}{% if col == 'material' %}<span class="sort-indicator">{% if dir == 'asc' %}▲{% else %}▼{% endif %}</span>{% endif %}{% endfor %}
                 </th>
-                <th class="col-status">Status</th>
+                <th class="col-status sortable" data-column="status">
+                    Status
+                    {% for col, dir in sort_spec %}{% if col == 'status' %}<span class="sort-indicator">{% if dir == 'asc' %}▲{% else %}▼{% endif %}</span>{% endif %}{% endfor %}
+                </th>
                 <th class="col-quantity sortable" data-column="quantity">
                     Qty
                     {% for col, dir in sort_spec %}{% if col == 'quantity' %}<span class="sort-indicator">{% if dir == 'asc' %}▲{% else %}▼{% endif %}</span>{% endif %}{% endfor %}
@@ -251,12 +254,14 @@
     // ========================================
     let currentSort = {{ sort_spec | tojson }};
 
+    const DEFAULT_SORT = 'status:asc,updated:desc';
+
     function navigateWithSort(sortArray) {
         const url = new URL(window.location.href);
         const sortParam = sortArray.map(([col, dir]) => `${col}:${dir}`).join(',');
 
-        // Handle default sort (updated:desc) - don't include in URL
-        if (sortParam === 'updated:desc' || sortArray.length === 0) {
+        // Handle default sort — don't include in URL
+        if (sortParam === DEFAULT_SORT || sortArray.length === 0) {
             url.searchParams.delete('sort');
         } else {
             url.searchParams.set('sort', sortParam);
@@ -317,7 +322,7 @@
 
             // If removing all sorts, default back to updated:desc
             if (newSort.length === 0) {
-                navigateWithSort([['updated', 'desc']]);
+                navigateWithSort([['status', 'asc'], ['updated', 'desc']]);
             } else {
                 navigateWithSort(newSort);
             }
@@ -328,7 +333,7 @@
     const sortClearBtn = document.getElementById('sort-clear');
     if (sortClearBtn) {
         sortClearBtn.addEventListener('click', () => {
-            navigateWithSort([['updated', 'desc']]);
+            navigateWithSort([['status', 'asc'], ['updated', 'desc']]);
         });
     }
 })();

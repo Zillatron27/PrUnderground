@@ -80,6 +80,42 @@
     </section>
 
     <section class="account-section">
+        <h2>Contact Information</h2>
+        <p class="section-description">
+            These details are shown on your listings and profile so buyers can reach you.
+        </p>
+
+        {% if request.query_params.get('contact_updated') %}
+        <div class="alert alert-success">
+            Contact information updated successfully.
+        </div>
+        {% endif %}
+
+        <form action="/auth/update-contact" method="post" class="account-form">
+            <input type="hidden" name="{{ csrf_field_name }}" value="{{ csrf_token }}">
+            <div class="form-group">
+                <label for="managing_director">Managing Director Name</label>
+                <input type="text" id="managing_director" name="managing_director"
+                       value="{{ user.managing_director or '' }}"
+                       placeholder="{{ user.fio_username }}"
+                       maxlength="100"
+                       autocomplete="off">
+                <span class="help-text">Your in-game MD name — buyers need this to send contracts. Falls back to your FIO username if empty.</span>
+            </div>
+            <div class="form-group">
+                <label for="discord_username">Discord Username</label>
+                <input type="text" id="discord_username" name="discord_username"
+                       value="{{ user.discord_username or '' }}"
+                       placeholder="Optional"
+                       maxlength="32"
+                       autocomplete="off">
+                <span class="help-text">For out-of-game coordination. Only shown on your listings if set.</span>
+            </div>
+            <button type="submit" class="btn btn-primary">Save Contact Info</button>
+        </form>
+    </section>
+
+    <section class="account-section">
         <h2>Discord Template</h2>
         <p class="section-description">
             Customize how your listings appear when copied for Discord. Leave blank to use the default format.

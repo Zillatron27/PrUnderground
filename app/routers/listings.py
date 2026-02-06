@@ -4,6 +4,8 @@ from fastapi.responses import HTMLResponse, RedirectResponse
 from sqlalchemy.orm import Session
 from typing import Optional
 
+from sqlalchemy import case, func
+
 from ..database import get_db
 from ..models import User, Listing, PriceType, ListingType
 from ..fio_client import FIOClient, extract_active_production, extract_storage_locations
@@ -22,6 +24,20 @@ from .auth import get_current_user, require_user
 
 router = APIRouter()
 
+# Stock status as a computed SQL expression for sorting
+# 0 = in stock (or no tracking), 1 = low stock, 2 = out of stock
+STATUS_ORDER = case(
+    (Listing.available_quantity.is_(None), 0),
+    (Listing.available_quantity == 0, 2),
+    (
+        Listing.available_quantity <= func.coalesce(Listing.low_stock_threshold, 10),
+        1,
+    ),
+    else_=0,
+)
+
+# Default sort: available items first, then most recently updated
+DEFAULT_SORT = [("status", "asc"), ("updated", "desc")]
 
 # Valid sortable columns and their SQLAlchemy column references
 SORTABLE_COLUMNS = {
@@ -30,13 +46,14 @@ SORTABLE_COLUMNS = {
     "price": Listing.price_value,
     "location": Listing.storage_name,
     "updated": Listing.updated_at,
+    "status": STATUS_ORDER,
 }
 
 
 def parse_sort_param(sort_param: Optional[str]) -> list[tuple[str, str]]:
     """Parse sort parameter like 'material:asc,location:desc' into list of tuples."""
     if not sort_param:
-        return [("updated", "desc")]
+        return list(DEFAULT_SORT)
 
     result = []
     for part in sort_param.split(","):
@@ -52,7 +69,7 @@ def parse_sort_param(sort_param: Optional[str]) -> list[tuple[str, str]]:
             if col in SORTABLE_COLUMNS:
                 result.append((col, "asc"))
 
-    return result if result else [("updated", "desc")]
+    return result if result else list(DEFAULT_SORT)
 
 
 @router.get("/", response_class=HTMLResponse)
@@ -93,8 +110,6 @@ async def browse_listings(
         column = SORTABLE_COLUMNS[col_name]
         if col_name == "price":
             # Special handling: contact_me (NULL price_value) sorts last
-            from sqlalchemy import case
-            # For ascending: NULLs last (high value), for descending: NULLs last (low value)
             if direction == "asc":
                 query = query.order_by(
                     case((Listing.price_type == PriceType.CONTACT_ME, 1), else_=0),
@@ -105,6 +120,12 @@ async def browse_listings(
                     case((Listing.price_type == PriceType.CONTACT_ME, 1), else_=0),
                     column.desc()
                 )
+        elif col_name == "status":
+            # Computed expression — use asc/desc directly
+            if direction == "asc":
+                query = query.order_by(column.asc())
+            else:
+                query = query.order_by(column.desc())
         else:
             if direction == "asc":
                 query = query.order_by(column.asc())

@@ -21,23 +21,35 @@
 #}
 {% macro material_ticker(ticker, category=None, link=True) -%}
 {%- set cat_slug = (category|lower|replace(' ', '-')|replace('(', '')|replace(')', '')) if category else 'default' -%}
+<span class="field-copyable">
 {%- if link -%}
 <a href="/listings?material={{ ticker }}" class="mat-tile mat-tile-{{ cat_slug }}">{{ ticker }}</a>
 {%- else -%}
 <span class="mat-tile mat-tile-{{ cat_slug }}">{{ ticker }}</span>
 {%- endif -%}
+<button type="button" class="copy-btn" data-copy="{{ ticker }}" title="Copy ticker">
+    <svg width="12" height="12" viewBox="0 0 16 16" fill="currentColor"><path d="M0 6.75C0 5.784.784 5 1.75 5h1.5a.75.75 0 010 1.5h-1.5a.25.25 0 00-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 00.25-.25v-1.5a.75.75 0 011.5 0v1.5A1.75 1.75 0 019.25 16h-7.5A1.75 1.75 0 010 14.25zM5 1.75C5 .784 5.784 0 6.75 0h7.5C15.216 0 16 .784 16 1.75v7.5A1.75 1.75 0 0114.25 11h-7.5A1.75 1.75 0 015 9.25zm1.75-.25a.25.25 0 00-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 00.25-.25v-7.5a.25.25 0 00-.25-.25z"/></svg>
+</button>
+</span>
 {%- endmacro %}
 
 {#
     Seller display with optional corp code
-    Desktop: [CORP] Username
-    Medium/Narrow: Username only
+    Shows MD name if set, otherwise FIO username. Copy button copies the displayed name.
+    Desktop: [CORP] Name [copy]
+    Medium/Narrow: Name [copy]
 #}
 {% macro seller_display(user) -%}
+{%- set display_name = user.managing_director or user.fio_username -%}
+<span class="field-copyable">
 <a href="/u/{{ user.fio_username }}">
     {%- if user.company_code %}<span class="hide-medium">[{{ user.company_code }}] </span>{% endif -%}
-    {{ user.fio_username }}
+    {{ display_name }}
 </a>
+<button type="button" class="copy-btn" data-copy="{{ display_name }}" title="Copy name">
+    <svg width="12" height="12" viewBox="0 0 16 16" fill="currentColor"><path d="M0 6.75C0 5.784.784 5 1.75 5h1.5a.75.75 0 010 1.5h-1.5a.25.25 0 00-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 00.25-.25v-1.5a.75.75 0 011.5 0v1.5A1.75 1.75 0 019.25 16h-7.5A1.75 1.75 0 010 14.25zM5 1.75C5 .784 5.784 0 6.75 0h7.5C15.216 0 16 .784 16 1.75v7.5A1.75 1.75 0 0114.25 11h-7.5A1.75 1.75 0 015 9.25zm1.75-.25a.25.25 0 00-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 00.25-.25v-7.5a.25.25 0 00-.25-.25z"/></svg>
+</button>
+</span>
 {%- endmacro %}
 
 {#
@@ -47,8 +59,13 @@
 #}
 {% macro cx_location(location) -%}
 {%- if location -%}
+<span class="field-copyable">
     <span class="hide-medium">{{ location }}</span>
     <span class="show-medium">{{ CX_ABBREV.get(location, location) }}</span>
+    <button type="button" class="copy-btn" data-copy="{{ location }}" title="Copy location">
+        <svg width="12" height="12" viewBox="0 0 16 16" fill="currentColor"><path d="M0 6.75C0 5.784.784 5 1.75 5h1.5a.75.75 0 010 1.5h-1.5a.25.25 0 00-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 00.25-.25v-1.5a.75.75 0 011.5 0v1.5A1.75 1.75 0 019.25 16h-7.5A1.75 1.75 0 010 14.25zM5 1.75C5 .784 5.784 0 6.75 0h7.5C15.216 0 16 .784 16 1.75v7.5A1.75 1.75 0 0114.25 11h-7.5A1.75 1.75 0 015 9.25zm1.75-.25a.25.25 0 00-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 00.25-.25v-7.5a.25.25 0 00-.25-.25z"/></svg>
+    </button>
+</span>
 {%- else -%}
     —
 {%- endif -%}
@@ -59,6 +76,7 @@
     Desktop: Full formatted price (CX.NC1-10%, 1,500/u)
     Medium/Narrow: Condensed (CX-10%, 1.5k/u)
     If cx_prices is available, shows calculated actual price for CX-relative listings
+    Copy button copies raw numeric price (absolute or calculated CX)
 #}
 {% macro price_display(listing, cx_prices=None) -%}
 {%- set calculated_price = None -%}
@@ -69,6 +87,13 @@
         {%- set calculated_price = calculate_cx_actual_price(cx_ask, listing.price_value, listing.price_cx_is_absolute) -%}
     {%- endif -%}
 {%- endif -%}
+{%- set copy_price = None -%}
+{%- if listing.price_type.value == 'absolute' and listing.price_value is not none -%}
+    {%- set copy_price = listing.price_value -%}
+{%- elif calculated_price -%}
+    {%- set copy_price = calculated_price -%}
+{%- endif -%}
+<span class="field-copyable">
 <span class="hide-medium">{{ format_price(listing) }}{% if calculated_price %} <span class="cx-calculated">({{ '{:,.0f}'.format(calculated_price) }}/u)</span>{% endif %}</span>
 <span class="show-medium">
     {%- if listing.price_type.value == 'absolute' and listing.price_value is not none -%}
@@ -82,6 +107,12 @@
     {%- else -%}
         —
     {%- endif -%}
+</span>
+{%- if copy_price is not none %}
+<button type="button" class="copy-btn" data-copy="{{ '{:.0f}'.format(copy_price) }}" title="Copy price">
+    <svg width="12" height="12" viewBox="0 0 16 16" fill="currentColor"><path d="M0 6.75C0 5.784.784 5 1.75 5h1.5a.75.75 0 010 1.5h-1.5a.25.25 0 00-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 00.25-.25v-1.5a.75.75 0 011.5 0v1.5A1.75 1.75 0 019.25 16h-7.5A1.75 1.75 0 010 14.25zM5 1.75C5 .784 5.784 0 6.75 0h7.5C15.216 0 16 .784 16 1.75v7.5A1.75 1.75 0 0114.25 11h-7.5A1.75 1.75 0 015 9.25zm1.75-.25a.25.25 0 00-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 00.25-.25v-7.5a.25.25 0 00-.25-.25z"/></svg>
+</button>
+{%- endif %}
 </span>
 {%- endmacro %}
 
@@ -137,11 +168,17 @@
     Bundle price display
     Desktop: Full formatted price
     Medium/Narrow: Condensed
+    Copy button copies raw numeric price
 #}
 {% macro bundle_price_display(bundle) -%}
 {%- if bundle.price -%}
+<span class="field-copyable">
     <span class="hide-medium">{{ '{:,.0f}'.format(bundle.price) }} {{ bundle.currency or '' }}</span>
     <span class="show-medium">{{ condense_number(bundle.price) }}{{ ' ' + bundle.currency if bundle.currency else '' }}</span>
+    <button type="button" class="copy-btn" data-copy="{{ '{:.0f}'.format(bundle.price) }}" title="Copy price">
+        <svg width="12" height="12" viewBox="0 0 16 16" fill="currentColor"><path d="M0 6.75C0 5.784.784 5 1.75 5h1.5a.75.75 0 010 1.5h-1.5a.25.25 0 00-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 00.25-.25v-1.5a.75.75 0 011.5 0v1.5A1.75 1.75 0 019.25 16h-7.5A1.75 1.75 0 010 14.25zM5 1.75C5 .784 5.784 0 6.75 0h7.5C15.216 0 16 .784 16 1.75v7.5A1.75 1.75 0 0114.25 11h-7.5A1.75 1.75 0 015 9.25zm1.75-.25a.25.25 0 00-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 00.25-.25v-7.5a.25.25 0 00-.25-.25z"/></svg>
+    </button>
+</span>
 {%- else -%}
     Contact me
 {%- endif -%}

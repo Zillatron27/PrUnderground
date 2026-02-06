@@ -3979,6 +3979,70 @@ html.force-desktop .nav-links {
 }
 
 /* ========================================
+   Seller Contact Info (Browse + Profile)
+   ======================================== */
+
+.contact-item {
+    display: inline-flex;
+    align-items: center;
+    gap: 3px;
+    font-size: var(--text-xs);
+    color: var(--text-secondary);
+    white-space: nowrap;
+}
+
+.contact-label {
+    opacity: 0.6;
+}
+
+.contact-value {
+    color: var(--text-primary);
+}
+
+.copy-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    background: none;
+    border: none;
+    color: var(--text-secondary);
+    cursor: pointer;
+    padding: 1px 3px;
+    border-radius: 2px;
+    opacity: 0.5;
+    transition: opacity 0.15s, color 0.15s;
+}
+
+.copy-btn:hover {
+    opacity: 1;
+    color: var(--accent-cyan);
+}
+
+.copy-btn.copied {
+    opacity: 1;
+    color: var(--accent-green);
+}
+
+/* Profile page contact block */
+.profile-contact {
+    display: flex;
+    gap: var(--space-md);
+    margin-top: var(--space-sm);
+    flex-wrap: wrap;
+}
+
+.profile-contact .contact-item {
+    font-size: var(--text-sm);
+}
+
+/* Inline copyable field wrapper (material, price, location cells) */
+.field-copyable {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+}
+
+/* ========================================
    Collapsible Filter Section (Feature 2)
    ======================================== */
 

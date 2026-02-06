@@ -32,7 +32,7 @@ from .services.telemetry import increment_stat, Metrics
 from .scheduler import start_scheduler, stop_scheduler
 
 # App version - single source of truth
-__version__ = "1.1.1"
+__version__ = "1.1.2"
 
 # Configure logging
 logging.basicConfig(

@@ -3976,6 +3976,11 @@ html.force-desktop .nav-links {
     .col-quantity .hide-narrow {
         display: none !important;
     }
+
+    /* Hide copy buttons on browse table — too cramped at this width */
+    .listings-table .copy-btn {
+        display: none;
+    }
 }
 
 /* ========================================

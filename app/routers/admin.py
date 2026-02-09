@@ -3,12 +3,14 @@
 import logging
 import os
 from datetime import date, timedelta
-from fastapi import APIRouter, Depends, HTTPException, Request
+from typing import Optional
+from fastapi import APIRouter, Depends, HTTPException, Request, Form
 from fastapi.responses import HTMLResponse
 from sqlalchemy.orm import Session
 from sqlalchemy import func
 
 from ..database import get_db
+from ..csrf import verify_csrf
 from ..models import User, Listing, Bundle, UsageStats
 from ..admin import is_admin
 from ..services.telemetry import get_stats_summary, Metrics
@@ -82,9 +84,11 @@ async def admin_stats(
 @router.post("/force-cx-sync", response_class=HTMLResponse)
 async def force_cx_sync(
     request: Request,
+    csrf_token: Optional[str] = Form(None),
     db: Session = Depends(get_db),
 ):
     """Force an immediate CX price sync."""
+    await verify_csrf(request, csrf_token)
     user = require_admin(request, db)
 
     logger.info(f"Admin {user.fio_username} triggered manual CX sync")
@@ -107,9 +111,11 @@ async def force_cx_sync(
 @router.post("/restart", response_class=HTMLResponse)
 async def restart_container(
     request: Request,
+    csrf_token: Optional[str] = Form(None),
     db: Session = Depends(get_db),
 ):
     """Restart the container by exiting cleanly."""
+    await verify_csrf(request, csrf_token)
     user = require_admin(request, db)
 
     logger.info(f"Admin {user.fio_username} triggered container restart")

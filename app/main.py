@@ -1,4 +1,5 @@
 import logging
+import os
 from datetime import datetime
 from contextlib import asynccontextmanager
 from dotenv import load_dotenv
@@ -67,6 +68,23 @@ async def lifespan(app: FastAPI):
         logger.error(f"Startup sync failed: {e}")
     finally:
         db.close()
+
+    # Fail fast if production is running with default/missing secrets
+    if os.getenv("ENVIRONMENT", "").lower() == "production":
+        errors = []
+        session_secret = os.getenv("SESSION_SECRET", "")
+        if not session_secret or session_secret == "dev-secret-change-me":
+            errors.append("SESSION_SECRET is missing or using the dev default")
+        csrf_secret = os.getenv("CSRF_SECRET", "")
+        if not csrf_secret or csrf_secret == "dev-csrf-secret-change-me":
+            errors.append("CSRF_SECRET is missing or using the dev default")
+        if not os.getenv("SECRET_KEY", ""):
+            errors.append("SECRET_KEY is missing (required for Fernet encryption)")
+        if errors:
+            raise RuntimeError(
+                "Refusing to start in production with insecure secrets:\n  - "
+                + "\n  - ".join(errors)
+            )
 
     # Start background scheduler for CX price sync
     start_scheduler()

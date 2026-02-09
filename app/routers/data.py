@@ -3,11 +3,13 @@ Data import/export endpoints.
 """
 
 import json
+from typing import Optional
 from fastapi import APIRouter, Depends, HTTPException, Request, UploadFile, File, Form
 from fastapi.responses import JSONResponse, Response
 from sqlalchemy.orm import Session
 
 from ..database import get_db
+from ..csrf import verify_csrf
 from ..services.json_io import (
     export_backup,
     import_json,
@@ -48,6 +50,7 @@ async def import_data_endpoint(
     request: Request,
     file: UploadFile = File(...),
     mode: str = Form("merge_update"),
+    csrf_token: Optional[str] = Form(None),
     db: Session = Depends(get_db),
 ):
     """
@@ -58,6 +61,7 @@ async def import_data_endpoint(
     - merge_add: Only add listings for materials not already listed
     - merge_update: Update existing listings + add new ones
     """
+    await verify_csrf(request, csrf_token)
     user = require_user(request, db)
 
     # Validate mode

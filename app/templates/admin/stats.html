@@ -12,7 +12,8 @@
                         hx-post="/admin/force-cx-sync"
                         hx-target="#cx-sync-result"
                         hx-swap="innerHTML"
-                        hx-indicator="#cx-sync-spinner">
+                        hx-indicator="#cx-sync-spinner"
+                        hx-vals='{"csrf_token": "{{ csrf_token }}"}'>
                     Force CX Update
                 </button>
                 <span id="cx-sync-spinner" class="htmx-indicator">Syncing...</span>
@@ -23,7 +24,8 @@
                         hx-post="/admin/restart"
                         hx-target="#restart-result"
                         hx-swap="innerHTML"
-                        hx-confirm="Are you sure you want to restart the container? The service will be briefly unavailable.">
+                        hx-confirm="Are you sure you want to restart the container? The service will be briefly unavailable."
+                        hx-vals='{"csrf_token": "{{ csrf_token }}"}'>
                     Restart Container
                 </button>
                 <span id="restart-result"></span>

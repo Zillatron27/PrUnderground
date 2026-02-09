@@ -71,59 +71,16 @@ async def check_user(
     db: Session = Depends(get_db),
 ):
     """
-    Step 1: Check if user exists with a stored API key.
-    If yes and key is valid → log them in.
-    If no or key is invalid → prompt for API key.
+    Step 1: Check if user exists, then prompt for API key.
+    Always requires the user to provide their API key to authenticate.
     """
     await verify_csrf(request, csrf_token)
     fio_username = fio_username.strip()
 
-    # Check if user exists in our database
     existing_user = db.query(User).filter(
         User.fio_username.ilike(fio_username)
     ).first()
 
-    if existing_user and existing_user.fio_api_key:
-        # Try to validate the stored API key (decrypt it first)
-        decrypted_key = decrypt_api_key(existing_user.fio_api_key)
-        client = FIOClient(api_key=decrypted_key)
-        try:
-            await client.verify_api_key(existing_user.fio_username)
-            # Key is still valid - update company info and log them in
-            user_info = await client.get_user_info(existing_user.fio_username)
-            if user_info:
-                if user_info.get("CompanyCode"):
-                    existing_user.company_code = user_info["CompanyCode"]
-                if user_info.get("CompanyName"):
-                    existing_user.company_name = user_info["CompanyName"]
-                db.commit()
-
-            # Audit log successful login and telemetry
-            log_audit(db, AuditAction.USER_LOGIN, user_id=existing_user.id)
-            increment_stat(db, Metrics.LOGINS)
-            increment_stat(db, Metrics.ACTIVE_USERS_DAILY)
-
-            response = RedirectResponse(url="/dashboard", status_code=303)
-            settings = get_cookie_settings(request)
-            response.set_cookie(
-                key="session",
-                value=sign_session(existing_user.id),
-                httponly=True,
-                max_age=SESSION_MAX_AGE,
-                **settings,  # samesite and secure
-            )
-            return response
-        except FIOAuthError:
-            # Stored key is no longer valid - need a new one
-            pass
-        except Exception as e:
-            # Network error, timeout, or other issue - prompt for new key
-            logger.warning(f"FIO check failed for {fio_username}: {e}")
-            pass
-        finally:
-            await client.close()
-
-    # Either new user or stored key is invalid - prompt for API key
     return render_template(
         request,
         "auth/login.html",

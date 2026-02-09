@@ -31,12 +31,12 @@
 
     {% else %}
     {# Step 2: Ask for API key (new user or expired key) #}
-    <h1>{% if is_new_user %}Welcome, {{ fio_username }}!{% else %}Reconnect API Key{% endif %}</h1>
+    <h1>{% if is_new_user %}Welcome, {{ fio_username }}!{% else %}Welcome back, {{ fio_username }}!{% endif %}</h1>
 
     {% if is_new_user %}
     <p class="auth-subtitle">Let's get you set up with PrUnderground.</p>
     {% else %}
-    <p class="auth-subtitle">Your stored API key is no longer valid. Please enter a new one.</p>
+    <p class="auth-subtitle">Enter your FIO API key to log in.</p>
     {% endif %}
 
     <div class="auth-instructions">

@@ -54,3 +54,5 @@ htmlcov/
 
 # Claude Code config (stored in private repo)
 CLAUDE.md
+.claude/settings.json
+.claude/commands/
